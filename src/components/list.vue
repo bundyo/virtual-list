@@ -1,8 +1,8 @@
 <template>
-    <div class="ab-list-container">
+    <div class="ab-list-container" ref="container">
         <div class="ab-list-sizer"></div>
         <div v-for="(row, index) in view" :key="index" class="ab-list-row">
-            {{ row[row.textField] }}
+            {{ row[row[textField]] }}
         </div>
     </div>
 </template>
@@ -20,9 +20,13 @@
         name: "fusion-list",
         options: {
             props: {
+                textField: {
+                    type: String,
+                    default: "text"
+                },
                 source: {
                     type: Array,
-                    default: []
+                    default: () => []
                 }
             },
 
@@ -64,7 +68,7 @@
 
             created() {
                 this.observer = new IntersectionObserver(this.instersectionCallback.bind(this), {
-                    root: document.querySelector("#scrollArea"),
+                    root: this.$refs.container,
                     rootMargin: "0px",
                     threshold: 1
                 });
