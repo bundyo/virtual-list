@@ -1,9 +1,10 @@
 <template>
     <div class="ab-list-content" ref="content">
-        <div class="ab-list-sizer" ref="sizer"></div>
-        <div v-for="(row, index) in view" :key="index" class="ab-list-row">
-            {{ row[textField] }}
-        </div>
+        <div class="ab-list-sizer" ref="sizer" :style="{ height: sizerHeight }"></div>
+        <component :is="rowComponent" v-for="(item, index) in view" :key="index" :item="item" class="ab-list-row"
+                   @mounted="observer.observe($event)" @unmounted="observer.unobserve($event)"
+                   :style="{ marginTop: index === 0 && firstMargin }" ref="rows">
+        </component>
     </div>
 </template>
 
@@ -30,6 +31,9 @@
             source: {
                 type: Array,
                 default: () => []
+            },
+            "row-component": {
+                default: "fusion-list-row"
             }
         },
 
@@ -44,67 +48,45 @@
         },
 
         methods: {
-            getHeight() {
-                const content = this.content;
-                const children = Array.from(content.children);
-
-                if (!children[1]) {
-                    return 0;
-                }
-
-                this.firstRow = children[1];
-                this.lastRow = children[children.length - 1];
-
-                this.firstRowRect = this.firstRow.getBoundingClientRect();
-                this.lastRowRect = this.lastRow.getBoundingClientRect();
-
-                if (this.sizer && this.firstRow) {
-                    return (this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / this.view.length;
-                }
-
-                return 0;
-            },
-
-            adjustDimensions(height) {
-                if (!this.$el) {
-                    return;
-                }
-
-                if (!this.source.length) {
-                    this.index = 0;
-                }
-
-                height = height || this.getHeight();
-
-                if (this.firstRow) {
-                    this.firstRow.style.marginTop = `${this.index * height}px`;
-                }
-            },
-
-            recalcView() {
-                const height = this.getHeight();
-
-                this.sizer.style.height = `${this.source.length * height}px`;
-
-                this.adjustDimensions(height);
-            },
-
             instersectionCallback(entries) {
-                entries.forEach(entry => {
-                    this.index = index(entry) - this.pageSize || 0;
+                entries.some(entry => {
+                    if (entry.intersectionRatio > 0 && entry.isIntersecting && entry.boundingClientRect.y < 0 ||
+                        entry.intersectionRatio < 0 && !entry.isIntersecting) {
+                        console.log(entry);
+                        this.index = index(entry.target) - 1;
+
+                        this.index < 0 && (this.index = 0);
+
+                        return true;
+                    }
                 });
             }
         },
 
         computed: {
-            view() {
-                return this.source.slice(this.index, this.pageSize);
-            }
-        },
+            firstMargin() {
+                return `${this.index * this.contentHeight}px`;
+            },
 
-        watch: {
-            source() {
-                this.$nextTick(this.recalcView.bind(this));
+            sizerHeight() {
+                console.log(this.source.length, this.contentHeight);
+                return `${this.source.length * this.contentHeight}px`;
+            },
+
+            contentHeight() {
+                if (!this.content) {
+                    return 0;
+                }
+
+                const rows = this.$refs.rows;
+                const firstRowRect = rows[0].$el.getBoundingClientRect();
+                const lastRowRect = rows[rows.length - 1].$el.getBoundingClientRect();
+
+                return Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / this.view.length);
+            },
+
+            view() {
+                return this.source.slice(this.index, this.index + this.pageSize);
             }
         },
 
@@ -112,29 +94,13 @@
             this.observer = new IntersectionObserver(this.instersectionCallback.bind(this), {
                 root: this.$refs.content,
                 rootMargin: "0px",
-                threshold: 1
+                threshold: 0
             });
         },
 
         mounted() {
             this.content = this.$refs.content;
             this.sizer = this.$refs.sizer;
-
-            this.recalcView();
-
-            //if (this.content.children) {
-            //    Array.from(this.content.children).forEach(child => {
-            //        this.observer.observe(child);
-            //    });
-            //}
-        },
-
-        unmounted() {
-            //if (this.content.children) {
-            //    Array.from(this.content.children).forEach(child => {
-            //        this.observer.unobserve(child);
-            //    });
-            //}
         }
     }
 </script>

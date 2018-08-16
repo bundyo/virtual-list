@@ -7,8 +7,10 @@
 <script>
     import Vue from "vue";
     import list from "./components/list.vue";
+    import listRow from "./components/list-row.vue";
 
     Vue.component(list.name, list);
+    Vue.component(listRow.name, listRow);
 
     export default {
         name: "app",
