@@ -3,7 +3,6 @@
         <div class="ab-list-content" ref="content" tabindex="-1">
             <div class="ab-list-sizer" ref="sizer" :style="{ height: sizerHeight }"></div>
             <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" :index="key + index" class="ab-list-row"
-                       @mounted="$nextTick(_ => observer.observe($event))" @unmounted="$nextTick(_ => observer.unobserve($event))"
                        :style="{ marginTop: key === 0 && firstMargin || 0 }" ref="rows">
             </component>
         </div>
@@ -11,8 +10,6 @@
 </template>
 
 <script>
-    const visibleElements = [];
-
     export default {
         name: "fusion-list",
         props: {
@@ -37,79 +34,58 @@
 
         data() {
             return {
-                index: 0,
+                index: null,
                 content: null,
-                observer: null
+                observer: null,
+                view: [],
+                firstMargin: "1px",
+                sizerHeight: "1px",
+                indexOffset: 0,
+                contentHeight: 1
             };
         },
 
         methods: {
-            instersectionCallback(entries) {
-                entries.reverse().forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        visibleElements[entry.boundingClientRect.bottom < entry.rootBounds.height ? "unshift" : "push"](entry.target);
-                    } else {
-                        const visibilityIndex = visibleElements.indexOf(entry.target);
+            instersectionCallback() {
+                let index = Math.round(this.content.scrollTop / this.contentHeight) - this.indexOffset;
 
-                        visibilityIndex >= 0 && visibleElements.splice(visibilityIndex, 1);
-                    }
-                });
+                index += this.step - (index % this.step);
 
-                if (visibleElements.length) {
-                    this.index = visibleElements[0].__key__ - this.indexOffset;
+                index < 0 && (index = 0);
+                index > this.endOffset && (index = this.endOffset);
 
-                    this.index += this.step - (this.index % this.step);
-
-                    this.index < 0 && (this.index = 0);
-                    this.index > this.source.length - this.pageSize - 1 && (this.index = this.source.length - this.pageSize - 1);
-
-                    //console.log(this.index, visibleElements[0].__key__, this.indexOffset);
-                }
+                this.index = index;
             }
         },
 
         computed: {
-            firstMargin() {
-                return `${this.index * this.contentHeight}px`;
-            },
+            endOffset() {
+                return this.source.length - this.pageSize - 1;
+            }
+        },
 
-            sizerHeight() {
-                return `${this.source.length * this.contentHeight}px`;
-            },
+        watch: {
+            index() {
+                this.view = this.source.slice(this.index, this.index + +this.pageSize);
 
-            indexOffset() {
-                return Math.round((this.pageSize - this.content.clientHeight / this.contentHeight) / 2)
-            },
+                this.$nextTick(_ => {
+                    this.firstRowRect = this.$refs.rows[0].$el.getBoundingClientRect();
+                    this.lastRowRect = this.$refs.rows[this.$refs.rows.length - 1].$el.getBoundingClientRect();
 
-            firstRowRect() {
-                return this.$refs.rows[0].$el.getBoundingClientRect();
-            },
-
-            lastRowRect() {
-                return this.$refs.rows[this.$refs.rows.length - 1].$el.getBoundingClientRect();
-            },
-
-            contentHeight() {
-                if (!this.content) {
-                    return 1;
-                }
-
-                return Math.round((this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / this.view.length);
-            },
-
-            view() {
-                return this.source.slice(this.index, this.index + +this.pageSize);
+                    this.contentHeight = Math.round((this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / this.view.length);
+                    this.firstMargin = `${this.index * this.contentHeight}px`;
+                    this.sizerHeight = `${this.source.length * this.contentHeight}px`;
+                    this.indexOffset = Math.round((this.pageSize - this.content.clientHeight / this.contentHeight) / 2);
+                });
             }
         },
 
         mounted() {
             this.content = this.$refs.content;
 
-            this.observer = new IntersectionObserver(this.instersectionCallback.bind(this), {
-                root: this.content,
-                rootMargin: "0px",
-                threshold: 0
-            });
+            this.content.addEventListener("scroll", this.instersectionCallback.bind(this), { passive: true });
+
+            this.index = 0;
         },
     }
 </script>
