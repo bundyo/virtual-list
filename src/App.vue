@@ -1,6 +1,6 @@
 <template>
     <div id="app">
-        <fusion-list :source="source"/>
+        <fusion-list :source="source" page-size="40"/>
     </div>
 </template>
 
@@ -12,22 +12,29 @@
     Vue.component(list.name, list);
     Vue.component(listRow.name, listRow);
 
+    const source = [...Array(10000)].map((_, text) => ({ text }));
+
     export default {
         name: "app",
         data() {
             return {
-                source: [
-                    { text: "1" }, { text: "2" }, { text: "3" }, { text: "4" }, { text: "5" }, { text: "6" },
-                    { text: "7" }, { text: "8" }, { text: "9" }, { text: "10" }, { text: "11" }, { text: "12" },
-                    { text: "13" }, { text: "14" }, { text: "15" }, { text: "16" }, { text: "17" }, { text: "18" }
-                ]
+                source
             };
         }
     }
 </script>
 
 <style>
+    body {
+        margin: 0;
+    }
+
     #app {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 600px;
         font-family: Helvetica, Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;

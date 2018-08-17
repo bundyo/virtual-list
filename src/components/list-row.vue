@@ -8,23 +8,17 @@
     export default {
         name: "fusion-list-row",
 
-        props: ["item"],
+        props: ["item", "index"],
 
-        data() {
-            return {
-            };
-        },
-
-        methods: {
-        },
-
-        computed: {
-        },
-
-        created() {
+        watch: {
+            index(value) {
+                this.$el.__key__ = value;
+            }
         },
 
         mounted() {
+            this.$el.__key__ = this.index;
+
             this.$emit("mounted", this.$el);
         },
 
@@ -36,24 +30,12 @@
 
 <style scoped>
     .ab-list-row {
-        height: 50px;
+        height: 40px;
         border: solid red;
         border-width: 1px 0;
     }
 
-    .ab-list-content {
-        position: relative;
-        height: 200px;
-        overflow: hidden;
-        overflow-y: auto;
-    }
-
-    .ab-list-sizer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 0;
-        height: 100%;
-        border: 1px solid transparent;
+    .ab-list-row:nth-child(2n) {
+        background: #efefef;
     }
 </style>
