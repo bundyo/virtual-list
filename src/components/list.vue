@@ -1,9 +1,9 @@
 <template>
     <div class="ab-list">
         <div class="ab-list-content" ref="content" tabindex="-1">
-            <div class="ab-list-sizer" ref="sizer" :style="{ height: sizerHeight }"></div>
+            <div class="ab-list-sizer" :style="{ height: sizerHeight }"></div>
             <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" :index="key + index" class="ab-list-row"
-                       :style="{ marginTop: key === 0 && firstMargin || 0 }" ref="rows">
+                       :style="{ marginTop: key === 0 && firstMargin || 0 }">
             </component>
         </div>
     </div>
@@ -38,6 +38,8 @@
                 content: null,
                 observer: null,
                 view: [],
+                firstRowRect: {},
+                lastRowRect: {},
                 firstMargin: "1px",
                 sizerHeight: "1px",
                 indexOffset: 0,
@@ -69,8 +71,10 @@
                 this.view = this.source.slice(this.index, this.index + +this.pageSize);
 
                 this.$nextTick(_ => {
-                    this.firstRowRect = this.$refs.rows[0].$el.getBoundingClientRect();
-                    this.lastRowRect = this.$refs.rows[this.$refs.rows.length - 1].$el.getBoundingClientRect();
+                    const allRows = Array.from(this.content.querySelectorAll("*:not(.ab-list-sizer)"));
+
+                    this.firstRowRect = allRows.shift().getBoundingClientRect();
+                    this.lastRowRect = allRows.pop().getBoundingClientRect();
 
                     this.contentHeight = Math.round((this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / this.view.length);
                     this.firstMargin = `${this.index * this.contentHeight}px`;
