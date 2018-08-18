@@ -3,7 +3,8 @@
         <div class="ab-list-content" ref="content" tabindex="-1">
             <div class="ab-list-sizer" :style="{ height: sizerHeight }"></div>
             <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" :index="key + index" class="ab-list-row"
-                       :style="{ marginTop: key === 0 && firstMargin || 0 }">
+                       @mounted="$nextTick(_ => observer.observe($event))" @unmounted="$nextTick(_ => observer.unobserve($event))"
+                       :style="{ marginTop: key === 0 && firstMargin || 0 }" ref="rows">
             </component>
         </div>
     </div>
@@ -38,6 +39,7 @@
                 content: null,
                 observer: null,
                 view: [],
+                scrollTop: 0,
                 firstRowRect: {},
                 lastRowRect: {},
                 firstMargin: "1px",
@@ -48,7 +50,21 @@
         },
 
         methods: {
-            instersectionCallback() {
+            intersectionCallback(entries) {
+                entries.forEach((entry) => {
+                    const component = this.$refs.rows[entry.target.__key__ - this.index];
+
+                    if (component) {
+                        if (entry.isIntersecting) {
+                            component["showing"] && component["showing"].call(component);
+                        } else {
+                            component["hiding"] && component["hiding"].call(component);
+                        }
+                    }
+                });
+            },
+
+            scrollCallback() {
                 let index = Math.round(this.content.scrollTop / this.contentHeight) - this.indexOffset;
 
                 index += this.step - (index % this.step);
@@ -70,7 +86,7 @@
             index() {
                 this.view = this.source.slice(this.index, this.index + +this.pageSize);
 
-                this.$nextTick(_ => {
+                this.$nextTick(() => {
                     const allRows = Array.from(this.content.querySelectorAll("*:not(.ab-list-sizer)"));
 
                     this.firstRowRect = allRows.shift().getBoundingClientRect();
@@ -87,7 +103,13 @@
         mounted() {
             this.content = this.$refs.content;
 
-            this.content.addEventListener("scroll", this.instersectionCallback.bind(this), { passive: true });
+            this.content.addEventListener("scroll", this.scrollCallback.bind(this), { passive: true });
+
+            this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
+                root: this.content,
+                rootMargin: "0px",
+                threshold: 0
+            });
 
             this.index = 0;
         },
@@ -104,6 +126,7 @@
         height: 100%;
         overflow: hidden;
         overflow-y: auto;
+        will-change: scroll-position;
     }
 
     .ab-list-sizer {
