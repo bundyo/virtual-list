@@ -2,9 +2,10 @@
     <div class="ab-list">
         <div class="ab-list-content" ref="content" tabindex="-1">
             <div class="ab-list-sizer" :style="{ height: sizerHeight }"></div>
-            <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" :index="key + index" class="ab-list-row"
-                       :style="{ marginTop: key === 0 && firstMargin || 0 }">
-            </component>
+            <div ref="container" class="ab-row-container">
+                <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" :index="key + index" class="ab-list-row">
+                </component>
+            </div>
         </div>
     </div>
 </template>
@@ -53,7 +54,7 @@
 
         methods: {
             _getRows() {
-                return Array.from(this.content.querySelectorAll(".ab-list-row:not(.ab-list-sizer)"));
+                return Array.from(this.$refs.container.children);
             },
 
             intersectionCallback(entries) {
@@ -158,5 +159,10 @@
         width: 0;
         height: 100%;
         border: 1px solid transparent;
+    }
+
+    .ab-row-container {
+        position: sticky;
+        top: -43px;
     }
 </style>
