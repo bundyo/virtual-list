@@ -1,6 +1,6 @@
 <template>
     <div id="app">
-        <fusion-list :source="source" page-size="80"/>
+        <fusion-list :source="source" page-size="100"/>
     </div>
 </template>
 
@@ -16,10 +16,9 @@
 
     export default {
         name: "app",
-        data() {
-            return {
-                source
-            };
+
+        created() {
+            this.source = source;
         }
     }
 </script>

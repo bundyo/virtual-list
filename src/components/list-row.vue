@@ -1,6 +1,7 @@
 <template>
-    <div class="ab-list-row" :style="{ opacity: this.shown }">
-        {{ item.text }}
+    <div class="ab-list-row">
+        <span>{{ item.text }}</span>
+        <span>{{ item.text }}</span>
     </div>
 </template>
 
@@ -32,14 +33,12 @@
             }
         },
 
-        mounted() {
-            this.$el.__key__ = this.index;
-
-            this.$emit("mounted", this.$el);
+        updated() {
+            return this.$el.offsetHeight;
         },
 
-        unmounted() {
-            this.$emit("unmounted", this.$el);
+        mounted() {
+            this.$el.__key__ = this.index;
         }
     }
 </script>
@@ -47,10 +46,12 @@
 <style scoped>
     .ab-list-row {
         height: 40px;
-        border: solid red;
-        border-width: 1px 0;
-        transition: opacity 100ms ease-out;
-        will-change: contents;
+        display: flex;
+        flex-direction: row;
+    }
+
+    .ab-list-row > span {
+        flex: 1;
     }
 
     .ab-list-row:nth-child(2n) {

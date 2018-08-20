@@ -3,14 +3,15 @@
         <div class="ab-list-content" ref="content" tabindex="-1">
             <div class="ab-list-sizer" :style="{ height: sizerHeight }"></div>
             <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" :index="key + index" class="ab-list-row"
-                       @mounted="$nextTick(_ => observer.observe($event))" @unmounted="$nextTick(_ => observer.unobserve($event))"
-                       :style="{ marginTop: key === 0 && firstMargin || 0 }" ref="rows">
+                       :style="{ marginTop: key === 0 && firstMargin || 0 }">
             </component>
         </div>
     </div>
 </template>
 
 <script>
+    const maxHeight = 10000000;
+
     export default {
         name: "fusion-list",
         props: {
@@ -36,6 +37,7 @@
         data() {
             return {
                 index: null,
+                scale: 1,
                 content: null,
                 observer: null,
                 view: [],
@@ -50,9 +52,16 @@
         },
 
         methods: {
+            _getRows() {
+                return Array.from(this.content.querySelectorAll(".ab-list-row:not(.ab-list-sizer)"));
+            },
+
             intersectionCallback(entries) {
+                const rows = this._getRows();
+
                 entries.forEach((entry) => {
-                    const component = this.$refs.rows[entry.target.__key__ - this.index];
+                    const row = rows[entry.target.__key__ - this.index];
+                    const component = row && row.__vue__;
 
                     if (component) {
                         if (entry.isIntersecting) {
@@ -65,12 +74,26 @@
             },
 
             scrollCallback() {
-                let index = Math.round(this.content.scrollTop / this.contentHeight) - this.indexOffset;
+                const rows = this._getRows();
+
+                let index = Math.round(this.content.scrollTop / this.contentHeight) * this.scale - this.indexOffset;
 
                 index += this.step - (index % this.step);
 
                 index < 0 && (index = 0);
                 index > this.endOffset && (index = this.endOffset);
+
+                this.firstRowRect = rows.shift().getBoundingClientRect();
+                this.lastRowRect = rows.pop().getBoundingClientRect();
+
+                this.contentHeight = Math.round((this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / this.pageSize);
+
+                const sizerHeight = this.source.length * this.contentHeight;
+
+                this.scale = Math.ceil(sizerHeight / maxHeight);
+                this.firstMargin = `${Math.round(index * this.contentHeight / this.scale)}px`;
+                this.indexOffset = Math.round((this.pageSize - this.content.clientHeight / this.contentHeight) / 2);
+                this.sizerHeight = `${Math.round(sizerHeight / this.scale)}px`;
 
                 this.index = index;
             }
@@ -78,7 +101,7 @@
 
         computed: {
             endOffset() {
-                return this.source.length - this.pageSize - 1;
+                return this.source.length - this.pageSize;
             }
         },
 
@@ -87,15 +110,14 @@
                 this.view = this.source.slice(this.index, this.index + +this.pageSize);
 
                 this.$nextTick(() => {
-                    const allRows = Array.from(this.content.querySelectorAll("*:not(.ab-list-sizer)"));
+                    const rows = this._getRows();
 
-                    this.firstRowRect = allRows.shift().getBoundingClientRect();
-                    this.lastRowRect = allRows.pop().getBoundingClientRect();
-
-                    this.contentHeight = Math.round((this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / this.view.length);
-                    this.firstMargin = `${this.index * this.contentHeight}px`;
-                    this.sizerHeight = `${this.source.length * this.contentHeight}px`;
-                    this.indexOffset = Math.round((this.pageSize - this.content.clientHeight / this.contentHeight) / 2);
+                    if (rows) {
+                        rows.forEach(row => {
+                            this.observer.unobserve(row);
+                            this.observer.observe(row);
+                        });
+                    }
                 });
             }
         },
@@ -126,7 +148,7 @@
         height: 100%;
         overflow: hidden;
         overflow-y: auto;
-        will-change: scroll-position;
+        will-change: contents;
     }
 
     .ab-list-sizer {
