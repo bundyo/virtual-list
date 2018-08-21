@@ -31,15 +31,17 @@
 
 <style scoped>
     .fs-list-row {
-        height: 100%;
+        height: 40px;
         display: flex;
         flex-direction: row;
         transition: opacity 200ms ease-out;
         will-change: contents;
+        align-items: center;
     }
 
     .fs-list-row > span {
         flex: 1;
+        padding: 10px;
     }
 
     .fs-list-row:nth-child(2n) {

@@ -1,6 +1,6 @@
 <template>
     <div id="app">
-        <fusion-list :source="source" page-size="4" :snap="true"/>
+        <fusion-list :source="source" page-size="40"/>
     </div>
 </template>
 
@@ -18,7 +18,7 @@
     Vue.component(list.name, list);
     Vue.component(listRow.name, listRow);
 
-    const source = [...Array(1000)].map((_, text) => ({ text: `Text ${text}` }));
+    const source = [...Array(300000)].map((_, text) => ({ text: `Text ${text}` }));
 
     export default {
         name: "app",

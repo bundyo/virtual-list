@@ -29,10 +29,6 @@
             pageSize: {
                 default: 10
             },
-            snap: {
-                type: Boolean,
-                default: false
-            },
             source: {
                 type: Array,
                 default: () => []
@@ -51,8 +47,6 @@
                 observer: null,
                 firstMargin: "1px",
                 sizerHeight: "1px",
-                indexOffset: 0,
-                rowHeight: 1
             };
         },
 
@@ -70,26 +64,8 @@
                 });
             },
 
-            snapToClosest() {
-                const rows = this._getRows();
-
-                rows.some((row) => {
-                    const rect = row.getBoundingClientRect();
-
-                    if (-rect.top > this.scroller.scrollTop) {
-                        this.scroller.scrollTop = -rect.top;
-
-                        return true;
-                    }
-                });
-            },
-
             scrollCallback() {
                 const endOffset = this.source.length - this.visibleCount;
-
-                if (this.snap) {
-                    this.snapToClosest();
-                }
 
                 let index = Math.round(this.scroller.scrollTop / this.rowHeight * this.scale) - this.indexOffset;
 
@@ -122,11 +98,14 @@
 
                     const sizerHeight = this.source.length * this.rowHeight;
 
-                    this.scale = Math.ceil(sizerHeight / maxHeight);
+                    this.scale = sizerHeight / maxHeight - .2;
+                    this.scale <= 1 && (this.scale = Math.ceil(this.scale));
+                    console.log(this.scale);
+
                     this.firstMargin = `${this.index * this.rowHeight / this.scale}px`;
                     this.visibleCount = Math.ceil(this.content.clientHeight / this.rowHeight);
                     this.indexOffset = Math.floor((this.pageSize - this.visibleCount) / 2);
-                    this.sizerHeight = `${sizerHeight / this.scale}px`;
+                    this.sizerHeight = `${Math.ceil(sizerHeight / this.scale)}px`;
                 }
             }
         },
