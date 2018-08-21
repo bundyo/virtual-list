@@ -1,6 +1,6 @@
 <template>
     <div id="app">
-        <fusion-list :source="source" page-size="100"/>
+        <fusion-list :source="source" page-size="4" :snap="true"/>
     </div>
 </template>
 
@@ -9,10 +9,16 @@
     import list from "./components/list.vue";
     import listRow from "./components/list-row.vue";
 
+    Vue.directive("notify-mount", {
+        inserted: function (el, binding, vnode) {
+            vnode.componentInstance.$emit("mounted", el);
+        }
+    });
+
     Vue.component(list.name, list);
     Vue.component(listRow.name, listRow);
 
-    const source = [...Array(400000)].map((_, text) => ({ text }));
+    const source = [...Array(1000)].map((_, text) => ({ text: `Text ${text}` }));
 
     export default {
         name: "app",

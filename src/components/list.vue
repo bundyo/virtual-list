@@ -1,11 +1,14 @@
 <template>
-    <div class="ab-list">
-        <div ref="container" class="ab-row-container">
-            <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" :index="key + index" class="ab-list-row">
+    <div class="fs-list">
+        <div ref="content" class="fs-list-content">
+            <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" class="fs-list-row"
+                       :index="key + index" :style="{ marginTop: key === 0 && firstMargin || 0 }"
+                       v-notify-mount @mounted="$nextTick(() => observer.observe($event))">
             </component>
+            <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
         </div>
-        <div class="ab-list-content" ref="content" tabindex="-1">
-            <div class="ab-list-sizer" :style="{ height: sizerHeight }"></div>
+        <div class="fs-scroller" ref="scroller" tabindex="-1">
+            <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
         </div>
     </div>
 </template>
@@ -26,6 +29,10 @@
             pageSize: {
                 default: 10
             },
+            snap: {
+                type: Boolean,
+                default: false
+            },
             source: {
                 type: Array,
                 default: () => []
@@ -40,35 +47,39 @@
                 index: null,
                 scale: 1,
                 content: null,
+                scroller: null,
                 observer: null,
-                view: [],
-                firstRowRect: {},
-                lastRowRect: {},
+                firstMargin: "1px",
                 sizerHeight: "1px",
                 indexOffset: 0,
-                visibleCount: 0,
-                contentHeight: 1
+                rowHeight: 1
             };
         },
 
         methods: {
             _getRows() {
-                return this.$refs.container ? Array.from(this.$refs.container.children) : [];
+                return Array.from(this.content.querySelectorAll(".fs-list-row:not(.fs-sizer)"));
             },
 
             intersectionCallback(entries) {
+                entries.forEach((entry) => {
+                    const component = entry.target.__vue__;
+                    const event = entry.isIntersecting ? "showing" : "hiding";
+
+                    component && component[event] && component[event].call(component);
+                });
+            },
+
+            snapToClosest() {
                 const rows = this._getRows();
 
-                entries.forEach((entry) => {
-                    const row = rows[entry.target.__key__ - this.index];
-                    const component = row && row.__vue__;
+                rows.some((row) => {
+                    const rect = row.getBoundingClientRect();
 
-                    if (component) {
-                        if (entry.isIntersecting) {
-                            component["showing"] && component["showing"].call(component);
-                        } else {
-                            component["hiding"] && component["hiding"].call(component);
-                        }
+                    if (-rect.top > this.scroller.scrollTop) {
+                        this.scroller.scrollTop = -rect.top;
+
+                        return true;
                     }
                 });
             },
@@ -76,7 +87,11 @@
             scrollCallback() {
                 const endOffset = this.source.length - this.visibleCount;
 
-                let index = Math.round(this.content.scrollTop / this.contentHeight) * this.scale;
+                if (this.snap) {
+                    this.snapToClosest();
+                }
+
+                let index = Math.round(this.scroller.scrollTop / this.rowHeight * this.scale) - this.indexOffset;
 
                 index += index % this.step;
 
@@ -84,42 +99,43 @@
                 index > endOffset && (index = endOffset);
 
                 this.index = index;
+                this.content.scrollTop = this.scroller.scrollTop;
+            }
+        },
+
+        computed: {
+            view() {
+                return this.source.slice(this.index, this.index + +this.pageSize);
             }
         },
 
         watch: {
             index() {
-                this.view = this.source.slice(this.index, this.index + +this.pageSize);
+                const rows = this._getRows();
+                const len = rows.length;
 
-                this.$nextTick(() => {
-                    const rows = this._getRows();
-                    const len = rows.length;
+                if (len) {
+                    const firstRowRect = rows.shift().getBoundingClientRect();
+                    const lastRowRect = rows.pop().getBoundingClientRect();
 
-                    if (len) {
-                        this.firstRowRect = rows.shift().getBoundingClientRect();
-                        this.lastRowRect = rows.pop().getBoundingClientRect();
+                    this.rowHeight = Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / len);
 
-                        this.contentHeight = Math.round((this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / len);
+                    const sizerHeight = this.source.length * this.rowHeight;
 
-                        const sizerHeight = this.source.length * this.contentHeight;
-
-                        this.scale = Math.ceil(sizerHeight / maxHeight);
-                        this.sizerHeight = `${Math.round(sizerHeight / this.scale)}px`;
-                        this.visibleCount = Math.ceil(this.content.clientHeight / this.contentHeight);
-
-                        rows.forEach(row => {
-                            this.observer.unobserve(row);
-                            this.observer.observe(row);
-                        });
-                    }
-                });
+                    this.scale = Math.ceil(sizerHeight / maxHeight);
+                    this.firstMargin = `${this.index * this.rowHeight / this.scale}px`;
+                    this.visibleCount = Math.ceil(this.content.clientHeight / this.rowHeight);
+                    this.indexOffset = Math.floor((this.pageSize - this.visibleCount) / 2);
+                    this.sizerHeight = `${sizerHeight / this.scale}px`;
+                }
             }
         },
 
         mounted() {
             this.content = this.$refs.content;
+            this.scroller = this.$refs.scroller;
 
-            this.content.addEventListener("scroll", this.scrollCallback.bind(this), { passive: true });
+            this.scroller.addEventListener("scroll", this.scrollCallback.bind(this), { passive: true });
 
             this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
                 root: this.content,
@@ -133,14 +149,12 @@
 </script>
 
 <style scoped>
-    .ab-list {
+    .fs-list {
         height: 100%;
-        overflow: hidden;
-        perspective: 1px;
-        position: relative;
     }
 
-    .ab-list-content {
+    .fs-list-content,
+    .fs-scroller {
         position: relative;
         height: 100%;
         overflow: hidden;
@@ -148,19 +162,18 @@
         will-change: contents;
     }
 
-    .ab-list-sizer {
+    .fs-list-content {
+        position: absolute;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .fs-sizer {
         position: absolute;
         top: 0;
         left: 0;
         width: 0;
         height: 100%;
         border: 1px solid transparent;
-    }
-
-    .ab-row-container {
-        position: fixed;
-        width: 100%;
-        z-index: -1;
-        top: 0;
     }
 </style>
