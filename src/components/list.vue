@@ -2,7 +2,7 @@
     <div class="fs-list">
         <div ref="content" class="fs-list-content">
             <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" class="fs-list-row"
-                       :index="key + index" :style="{ marginTop: key === 0 && firstMargin || 0 }"
+                       :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }"
                        v-notify-mount @mounted="$nextTick(() => observer.observe($event))">
             </component>
             <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
@@ -65,7 +65,7 @@
             },
 
             scrollCallback() {
-                const endOffset = this.source.length - this.visibleCount;
+                const endOffset = this.source.length - this._getRows().length;
 
                 let index = Math.round(this.scroller.scrollTop / this.rowHeight * this.scale) - this.indexOffset;
 
@@ -98,14 +98,14 @@
 
                     const sizerHeight = this.source.length * this.rowHeight;
 
-                    this.scale = sizerHeight / maxHeight - .2;
+                    this.scale = sizerHeight / maxHeight;
                     this.scale <= 1 && (this.scale = Math.ceil(this.scale));
-                    console.log(this.scale);
 
-                    this.firstMargin = `${this.index * this.rowHeight / this.scale}px`;
+                    this.firstMargin = this.index * this.rowHeight / this.scale;
                     this.visibleCount = Math.ceil(this.content.clientHeight / this.rowHeight);
                     this.indexOffset = Math.floor((this.pageSize - this.visibleCount) / 2);
-                    this.sizerHeight = `${Math.ceil(sizerHeight / this.scale)}px`;
+                    this.sizerHeight = `${this.scale ? sizerHeight :
+                        Math.max(this.pageSize * this.rowHeight + this.firstMargin, sizerHeight / this.scale)}px`;
                 }
             }
         },
