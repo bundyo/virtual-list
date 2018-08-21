@@ -104,7 +104,7 @@
                     this.firstMargin = this.index * this.rowHeight / this.scale;
                     this.visibleCount = Math.ceil(this.content.clientHeight / this.rowHeight);
                     this.indexOffset = Math.floor((this.pageSize - this.visibleCount) / 2);
-                    this.sizerHeight = `${this.scale ? sizerHeight :
+                    this.sizerHeight = `${this.scale <= 1 ? sizerHeight :
                         Math.max(this.pageSize * this.rowHeight + this.firstMargin, sizerHeight / this.scale)}px`;
                 }
             }

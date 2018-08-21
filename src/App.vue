@@ -18,7 +18,7 @@
     Vue.component(list.name, list);
     Vue.component(listRow.name, listRow);
 
-    const source = [...Array(10000)].map((_, text) => ({ text: `Text ${text}` }));
+    const source = [...Array(1300000)].map((_, text) => ({ text: `Text ${text}` }));
 
     export default {
         name: "app",
