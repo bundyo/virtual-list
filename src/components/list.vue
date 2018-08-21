@@ -1,11 +1,11 @@
 <template>
     <div class="ab-list">
+        <div ref="container" class="ab-row-container">
+            <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" :index="key + index" class="ab-list-row">
+            </component>
+        </div>
         <div class="ab-list-content" ref="content" tabindex="-1">
             <div class="ab-list-sizer" :style="{ height: sizerHeight }"></div>
-            <div ref="container" class="ab-row-container">
-                <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" :index="key + index" class="ab-list-row">
-                </component>
-            </div>
         </div>
     </div>
 </template>
@@ -42,19 +42,18 @@
                 content: null,
                 observer: null,
                 view: [],
-                scrollTop: 0,
                 firstRowRect: {},
                 lastRowRect: {},
-                firstMargin: "1px",
                 sizerHeight: "1px",
                 indexOffset: 0,
+                visibleCount: 0,
                 contentHeight: 1
             };
         },
 
         methods: {
             _getRows() {
-                return Array.from(this.$refs.container.children);
+                return this.$refs.container ? Array.from(this.$refs.container.children) : [];
             },
 
             intersectionCallback(entries) {
@@ -75,34 +74,16 @@
             },
 
             scrollCallback() {
-                const rows = this._getRows();
+                const endOffset = this.source.length - this.visibleCount;
 
-                let index = Math.round(this.content.scrollTop / this.contentHeight) * this.scale - this.indexOffset;
+                let index = Math.round(this.content.scrollTop / this.contentHeight) * this.scale;
 
-                index += this.step - (index % this.step);
+                index += index % this.step;
 
                 index < 0 && (index = 0);
-                index > this.endOffset && (index = this.endOffset);
-
-                this.firstRowRect = rows.shift().getBoundingClientRect();
-                this.lastRowRect = rows.pop().getBoundingClientRect();
-
-                this.contentHeight = Math.round((this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / this.pageSize);
-
-                const sizerHeight = this.source.length * this.contentHeight;
-
-                this.scale = Math.ceil(sizerHeight / maxHeight);
-                this.firstMargin = `${Math.round(index * this.contentHeight / this.scale)}px`;
-                this.indexOffset = Math.round((this.pageSize - this.content.clientHeight / this.contentHeight) / 2);
-                this.sizerHeight = `${Math.round(sizerHeight / this.scale)}px`;
+                index > endOffset && (index = endOffset);
 
                 this.index = index;
-            }
-        },
-
-        computed: {
-            endOffset() {
-                return this.source.length - this.pageSize;
             }
         },
 
@@ -112,8 +93,20 @@
 
                 this.$nextTick(() => {
                     const rows = this._getRows();
+                    const len = rows.length;
 
-                    if (rows) {
+                    if (len) {
+                        this.firstRowRect = rows.shift().getBoundingClientRect();
+                        this.lastRowRect = rows.pop().getBoundingClientRect();
+
+                        this.contentHeight = Math.round((this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / len);
+
+                        const sizerHeight = this.source.length * this.contentHeight;
+
+                        this.scale = Math.ceil(sizerHeight / maxHeight);
+                        this.sizerHeight = `${Math.round(sizerHeight / this.scale)}px`;
+                        this.visibleCount = Math.ceil(this.content.clientHeight / this.contentHeight);
+
                         rows.forEach(row => {
                             this.observer.unobserve(row);
                             this.observer.observe(row);
@@ -142,6 +135,9 @@
 <style scoped>
     .ab-list {
         height: 100%;
+        overflow: hidden;
+        perspective: 1px;
+        position: relative;
     }
 
     .ab-list-content {
@@ -162,7 +158,9 @@
     }
 
     .ab-row-container {
-        position: sticky;
-        top: -43px;
+        position: fixed;
+        width: 100%;
+        z-index: -1;
+        top: 0;
     }
 </style>
