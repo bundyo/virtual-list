@@ -1,5 +1,5 @@
 <template>
-    <div class="fs-list">
+    <div class="fs-list" tabindex="-1">
         <div ref="content" class="fs-list-content">
             <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" class="fs-list-row"
                        :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }"
@@ -15,8 +15,15 @@
 
 <script>
     const maxHeight = 10000000;
+    const keys = {
+        "ArrowDown": .05,
+        "ArrowUp": -.05,
+        "PageDown": 1,
+        "PageUp": -1,
+        "Space": 1
+    };
 
-    export default {
+    module.exports = {
         name: "fusion-list",
         props: {
             textField: {
@@ -76,6 +83,18 @@
 
                 this.index = index;
                 this.content.scrollTop = this.scroller.scrollTop;
+            },
+
+            passWheel(e) {
+                this.scroller.scrollTop += e.deltaY;
+                this.scroller.scrollLeft += e.deltaX;
+            },
+
+            passKeys(e) {
+                this.scroller.scroll({
+                    top: this.scroller.scrollTop + keys[e.code] * this.content.clientHeight,
+                    behavior: e.repeat ? "instant" : "smooth"
+                });
             }
         },
 
@@ -111,8 +130,13 @@
         },
 
         mounted() {
+            debugger;
             this.content = this.$refs.content;
             this.scroller = this.$refs.scroller;
+            const passProxy = this.passKeys.bind(this);
+
+            this.content.addEventListener("wheel", this.passWheel.bind(this), true);
+            this.$el.addEventListener("keydown", passProxy);
 
             this.scroller.addEventListener("scroll", this.scrollCallback.bind(this), { passive: true });
 
@@ -130,6 +154,7 @@
 <style scoped>
     .fs-list {
         height: 100%;
+        display: flex;
     }
 
     .fs-list-content,
@@ -142,9 +167,16 @@
     }
 
     .fs-list-content {
-        position: absolute;
         overflow: hidden;
         width: 100%;
+        top: 0;
+        flex: 1;
+    }
+
+    .fs-scroller {
+        min-width: 9px;
+        flex-basis: fit-content;
+        outline: none;
     }
 
     .fs-sizer {
@@ -153,6 +185,6 @@
         left: 0;
         width: 0;
         height: 100%;
-        border: 1px solid transparent;
+        border-left: 1px solid transparent;
     }
 </style>

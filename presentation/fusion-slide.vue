@@ -1,5 +1,5 @@
 <template>
-    <div class="fs-list-row" :style="{ opacity: this.shown }">
+    <div class="fs-slide" :style="{ opacity: this.shown }">
         <span>{{ index }}</span>
         <span>{{ item.text }}</span>
     </div>
@@ -7,7 +7,9 @@
 
 <script>
     module.exports = {
-        name: "fusion-list-row",
+        name: "fusion-slide",
+
+        template: '',
 
         props: ["item", "index"],
 
@@ -29,9 +31,9 @@
     }
 </script>
 
-<style scoped>
-    .fs-list-row {
-        height: 40px;
+<style>
+    .fs-slide {
+        height: 100%;
         display: flex;
         flex-direction: row;
         transition: opacity 200ms ease-out;
@@ -39,12 +41,12 @@
         align-items: center;
     }
 
-    .fs-list-row > span {
+    .fs-slide > span {
         flex: 1;
         padding: 10px;
     }
 
-    .fs-list-row:nth-child(2n) {
+    .fs-slide:nth-child(2n) {
         background: #efefef;
     }
 </style>
