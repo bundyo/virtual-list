@@ -111,7 +111,7 @@
 
                 if (len) {
                     const firstRowRect = rows.shift().getBoundingClientRect();
-                    const lastRowRect = rows.pop().getBoundingClientRect();
+                    const lastRowRect = len > 1 && rows.pop().getBoundingClientRect();
 
                     this.rowHeight = Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / len);
 
@@ -130,7 +130,6 @@
         },
 
         mounted() {
-            debugger;
             this.content = this.$refs.content;
             this.scroller = this.$refs.scroller;
             const passProxy = this.passKeys.bind(this);
