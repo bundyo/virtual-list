@@ -153,6 +153,8 @@
             });
 
             this.index = 0;
+
+            this.$emit("mounted");
         },
     }
 </script>

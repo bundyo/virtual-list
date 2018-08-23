@@ -9,6 +9,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17-beta.0/dist/vue.js"></script>
     <script src="https://unpkg.com/http-vue-loader"></script>
+    <script src="https://polyfill.io/v2/polyfill.min.js%3Ffeatures=IntersectionObserver"></script>
 </head>
 <body>
     <div id="app"></div>
@@ -23,13 +24,14 @@
             }
         });
 
-        httpVueLoader.register(Vue, "./fusion-slide.vue");
+        httpVueLoader.register(Vue, "https://bundyo.org/v/fusion-slide.vue");
 
         const source = [{
             title: "Virtual List in Vue.JS in 144 Easy Steps",
             subtitle: "or more like 14 hard...",
             content: "",
-            footer: "<i class='fab fa-twitter'></i> @bundyo"
+            footer: `Open your console to see the slide cues<br/><br/>
+                     <a href="https://twitter.com/bundyo"><i class='fab fa-twitter'></i> @bundyo</a>`
         }, {
             quote: {
                 text: `"I wondered about that," said Nanny.<br/>"Then I thought maybe I was imagining things."<br/><br/>
@@ -50,12 +52,42 @@
             index: 2,
             title: "The Idea",
             subtitle: "or how to virtualize a list",
-            image: "https://i.imgur.com/3uDhyuR.jpg"
+            image: "https://i.imgur.com/3uDhyuR.jpg",
+        }, {
+            quote: {
+                text: `I know! I'll write a new virtual list component,<br/>
+                       even though there are several already!`,
+                author: "Me"
+            }
+        }, {
+            quote: {
+                text: `It would be easy - initialize an IntersectionObserver<br/>
+                       and scroll 'till you drop!`,
+                author: "Also me"
+            }
+        }, {
+            image: "https://i.imgur.com/3OCOoRq.jpg"
         }, {
             index: 3,
             title: "The Good, the Bad and the IntersectionObserver",
             subtitle: "or who brought a knife to the gunfight",
             image: "https://media.giphy.com/media/xD2E9byuH9HQk/giphy.gif"
+        }, {
+            quote: {
+                text: `The Intersection Observer API provides a way to<br/>
+                       asynchronously observe changes in the intersection<br/>
+                       of a target element with an ancestor element<br/>
+                       or with a top-level document's viewport.`,
+                author: "MDN"
+            }
+        }, {
+            quote: {
+                text: `The Intersection Observer API lets code register<br/>
+                       a callback function that is executed whenever<br/>
+                       an element they wish to monitor enters or<br/>
+                       exits another element (or the viewport).`,
+                author: "Also MDN"
+            }
         }, {
             index: 4,
             title: "Look Ma' - no Scrolling",
@@ -139,13 +171,13 @@
         new Vue({
             el: "#app",
 
-            template: `<fusion-list :source="source" page-size="5" row-component="fusion-slide" ref="list" v-notify-mount @mounted="onListMount">
+            template: `<fusion-list :source="source" page-size="5" row-component="fusion-slide" ref="list" @mounted="onListMount">
                            <!- Force Vue to load the Async browser SFC component ->
                            <fusion-slide :item="{}"></fusion-slide>
                        </fusion-list>`,
 
             components:{
-                "fusion-list": "url:../src/components/list.vue"
+                "fusion-list": "url:https://bundyo.org/v/list.vue"
             },
 
             created() {
@@ -154,7 +186,7 @@
 
             methods: {
                 onListMount() {
-                    this.$refs.list.$el.focus();
+                    this.$refs.list && this.$refs.list.$el.focus();
                 }
             }
         });

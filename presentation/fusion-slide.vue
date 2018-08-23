@@ -106,6 +106,12 @@
         position: absolute;
         bottom: 40px;
         right: 40px;
+        text-align: right;
+    }
+
+    .slide__footer a {
+        color: inherit;
+        text-decoration: inherit;
     }
 
     .slide__quote {
@@ -116,8 +122,28 @@
         justify-content: center;
     }
 
-    .slide__header + .slide__quote {
+    .slide__header ~ .slide__quote {
         height: 50%;
+    }
+
+    .slide__image {
+        text-align: center;
+        height: 100%;
+        display: inline-flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .slide__header ~ .slide__image {
+        height: 50%;
+    }
+
+    .slide__image > img {
+        height: 50%;
+    }
+
+    .slide__header ~ .slide__image > img {
+        height: 100%;
     }
 
     .slide__quote-text {
@@ -132,14 +158,5 @@
 
     .slide__quote-book:before {
         content: " - ";
-    }
-
-    .slide__image {
-        text-align: center;
-        height: 50%;
-    }
-
-    .slide__image > img {
-        height: 100%;
     }
 </style>
