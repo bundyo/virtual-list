@@ -86,12 +86,19 @@
             },
 
             passWheel(e) {
-                this.scroller.scrollTop += e.deltaY;
-                this.scroller.scrollLeft += e.deltaX;
+                if (e.deltaMode) {
+                    const lineHeight = keys["ArrowDown"] * this.content.clientHeight;
+
+                    this.scroller.scrollTop += e.deltaY * lineHeight;
+                    this.scroller.scrollLeft += e.deltaX * lineHeight;
+                } else {
+                    this.scroller.scrollTop += e.deltaY;
+                    this.scroller.scrollLeft += e.deltaX;
+                }
             },
 
             passKeys(e) {
-                this.scroller.scroll({
+                keys[e.code] && this.scroller.scroll({
                     top: this.scroller.scrollTop + keys[e.code] * this.content.clientHeight,
                     behavior: e.repeat ? "instant" : "smooth"
                 });

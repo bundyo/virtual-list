@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Virtual List</title>
 
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17-beta.0/dist/vue.js"></script>
     <script src="https://unpkg.com/http-vue-loader"></script>
 </head>
@@ -24,55 +27,110 @@
 
         const source = [{
             title: "Virtual List in Vue.JS in 144 Easy Steps",
-            subtitle: "or more like 14 hard"
+            subtitle: "or more like 14 hard...",
+            content: "",
+            footer: "<i class='fab fa-twitter'></i> @bundyo"
         }, {
+            quote: {
+                text: `"I wondered about that," said Nanny.<br/>"Then I thought maybe I was imagining things."<br/><br/>
+                       "No point in imagining anything," said Granny.<br/>"Things are bad enough as they are."`,
+                author: "Terry Pratchett",
+                book: "Witches Abroad"
+            }
+        }, {
+            index: 1,
             title: "The Problem",
-            subtitle: "or I have 1 million things, but I'm afraid to use them"
+            subtitle: "or I have too many things that I'm not afraid to use"
         }, {
-            title: "The Solu... the Idea",
-            subtitle: "or how things hit the fan"
+            quote: {
+                text: `I want to display a grid with 20 columns<br/>and a million rows<br/>
+                       and I want to have a combobox in every cell`,
+                author: "Every Second Developer"
+            }
         }, {
+            index: 2,
+            title: "The Idea",
+            subtitle: "or how to virtualize a list",
+            image: "https://i.imgur.com/3uDhyuR.jpg"
+        }, {
+            index: 3,
             title: "The Good, the Bad and the IntersectionObserver",
-            subtitle: "or who brought a knife to the gunfight"
+            subtitle: "or who brought a knife to the gunfight",
+            image: "https://media.giphy.com/media/xD2E9byuH9HQk/giphy.gif"
         }, {
+            index: 4,
             title: "Look Ma' - no Scrolling",
-            subtitle: "or how I saw the light in passive events"
+            subtitle: "or how I saw the light in passive events",
+            image: "https://media.giphy.com/media/SqmkZ5IdwzTP2/giphy.gif"
         }, {
+            index: 5,
             title: "Alternating Rows from Hell",
-            subtitle: "or why is CSS so haard :("
+            subtitle: "or why is CSS so haard :(",
+            image: "https://media.giphy.com/media/2rj8VysAig8QE/giphy.gif"
         }, {
+            index: 6,
             title: 'The Ugly Word "Performance"',
-            subtitle: "or who let the computed dogs out"
+            subtitle: "or who let the computed dogs out",
+            image: "https://media.giphy.com/media/5nj4KLBy2mhkH1pUWT/giphy.gif"
         }, {
+            index: 7,
             title: "The Return of the IntersectionObserver",
-            subtitle: "or how I learned to stop worrying and love the transitions"
+            subtitle: "or how I learned to stop worrying and love the transitions",
+            image: "https://media.giphy.com/media/A5a7hsfYMg5BS/giphy.gif"
         }, {
+            index: 8,
             title: "The Bottom End of the DOM element",
-            subtitle: "or how I entered the unknown"
+            subtitle: "or why I entered the unknown",
+            image: "https://i.imgur.com/dGxhCeZ.jpg"
         }, {
+            index: 9,
             title: "Easy-Peasy APZ",
-            subtitle: "or how Mozilla destroyed the EViL (the Entire Virtual List network)"
+            subtitle: "or how Mozilla destroyed the EViL (Every Virtual List)",
+            image: "https://media.giphy.com/media/ydBzMGqNz2ehG/giphy.gif"
         }, {
+            quote: {
+                text: `With APZ, scrolling is decoupled from the JavaScript thread,<br/>
+                       and happens on its own, leading to a smoother<br/>
+                       scrolling experience.<br/><br/>
+                       However, there is something we need to be aware of:<br/>
+                       now <strong>there will be a delay</strong> between the scrolling<br/>
+                       taking place and the scroll event being dispatched.<br/><br/>
+                       You <strong>don't need to worry</strong> about the value of passive<br/>
+                       for the basic scroll event. Since it can't be canceled,<br/>
+                       event listeners can't block page rendering anyway.`,
+                author: "MDN"
+            }
+        }, {
+            index: 10,
             title: "The Sticky Rescue",
             subtitle: "or how it saved someone else"
         }, {
+            index: 11,
             title: "Fixed and Forgotten",
             subtitle: "or the fix(ed) that didn't fix(ed)"
         }, {
-            title: "Synchronize and Run",
-            subtitle: "or how the twins got me"
+            index: 12,
+            title: "Hand in Hand thro' the Rye",
+            subtitle: "or there is a light at the end of the tunnel"
         }, {
+            index: 13,
             title: "In an Event of an Event",
-            subtitle: "or why the future is eventful"
+            subtitle: "or is it bright enough for a train?"
         }, {
+            index: 14,
             title: "The End of Everything",
-            subtitle: "or just everything in this session"
+            subtitle: "or just everything in this session",
+            quote: {
+                text: "Just imagine how terrible it might have been,<br/>if we'd been at all competent.",
+                author: "Terry Pratchett",
+                book: "Good Omens"
+            }
         }];
 
         new Vue({
             el: "#app",
 
-            template: `<fusion-list :source="source" page-size="5" row-component="fusion-slide" ref="list">
+            template: `<fusion-list :source="source" page-size="5" row-component="fusion-slide" ref="list" v-notify-mount @mounted="onListMount">
                            <!- Force Vue to load the Async browser SFC component ->
                            <fusion-slide :item="{}"></fusion-slide>
                        </fusion-list>`,
@@ -85,10 +143,10 @@
                 this.source = source;
             },
 
-            mounted() {
-                setTimeout(() => {
-                    this.$refs.list && this.$refs.list.$el.focus();
-                }, 1000);
+            methods: {
+                onListMount() {
+                    this.$refs.list.$el.focus();
+                }
             }
         });
 
@@ -103,9 +161,17 @@
             width: 100%;
             height: 100%;
             background: #42b883;
-            font-family: Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            color: #fff;
+            font: 18px normal, "Open Sans", sans-serif;
+        }
+
+        html .fs-list .fs-scroller {
+            position: absolute;
+            z-index: -1;
+            /* The scroller should be visible to work in FF */
+            opacity: 0.01;
         }
     </style>
 </body>
