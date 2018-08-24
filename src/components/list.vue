@@ -11,6 +11,8 @@
 </template>
 
 <script>
+    const maxHeight = 10000000;
+
     export default {
         name: "fusion-list",
         props: {
@@ -36,6 +38,7 @@
         data() {
             return {
                 index: null,
+                scale: 1,
                 content: null,
                 observer: null,
                 view: [],
@@ -67,7 +70,7 @@
             },
 
             scrollCallback() {
-                let index = Math.round(this.content.scrollTop / this.contentHeight) - this.indexOffset;
+                let index = Math.round(this.content.scrollTop / this.contentHeight) * this.scale - this.indexOffset;
 
                 index += this.step - (index % this.step);
 
@@ -97,9 +100,13 @@
                         this.lastRowRect = rows.pop().getBoundingClientRect();
 
                         this.contentHeight = Math.round((this.lastRowRect.top - this.firstRowRect.top + this.lastRowRect.height) / this.view.length);
-                        this.firstMargin = `${this.index * this.contentHeight}px`;
-                        this.sizerHeight = `${this.source.length * this.contentHeight}px`;
-                        this.indexOffset = Math.round((this.pageSize - this.content.clientHeight / this.contentHeight) / 2);
+
+                        const sizerHeight = this.source.length * this.contentHeight;
+
+                        this.scale = sizerHeight / maxHeight;
+                        this.firstMargin = `${Math.round(this.index * this.contentHeight / this.scale)}px`;
+                        this.indexOffset = Math.floor((this.pageSize - this.content.clientHeight / this.contentHeight) / 2);
+                        this.sizerHeight = `${Math.round(sizerHeight / this.scale)}px`;
                     }
                 });
             }
