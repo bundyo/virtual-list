@@ -20,9 +20,6 @@
                 type: String,
                 default: "text"
             },
-            step: {
-                default: 2
-            },
             pageSize: {
                 default: 10
             },
@@ -57,8 +54,6 @@
 
                 if (visibleElements.length) {
                     this.index = visibleElements[0].__key__ - this.indexOffset;
-
-                    this.index += this.index % this.step;
 
                     this.index < 0 && (this.index = 0);
                     this.index > this.source.length - this.pageSize - 1 && (this.index = this.source.length - this.pageSize - 1);
