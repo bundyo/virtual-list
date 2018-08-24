@@ -9,12 +9,6 @@
     import list from "./components/list.vue";
     import listRow from "./components/list-row.vue";
 
-    Vue.directive("notify-mount", {
-        inserted: function (el, binding, vnode) {
-            vnode.componentInstance.$emit("mounted", el);
-        }
-    });
-
     Vue.component(list.name, list);
     Vue.component(listRow.name, listRow);
 
@@ -22,9 +16,10 @@
 
     export default {
         name: "app",
-
-        created() {
-            this.source = source;
+        data() {
+            return {
+                source
+            };
         }
     }
 </script>
