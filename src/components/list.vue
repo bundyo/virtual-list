@@ -182,7 +182,7 @@
     }
 
     .fs-scroller {
-        min-width: 9px;
+        min-width: 17px;
         flex-basis: fit-content;
         outline: none;
     }

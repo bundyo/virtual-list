@@ -24,15 +24,30 @@
             }
         });
 
-        httpVueLoader.register(Vue, "https://bundyo.org/v/fusion-slide.vue");
+        httpVueLoader.register(Vue, "./fusion-slide.vue");
 
         const source = [{
             title: "Virtual List in Vue.JS in 144 Easy Steps",
             subtitle: "or more like 14 hard...",
-            content: "",
+            cue: {
+                text: `Здравейте,
+
+Моето име е Камен и съм фронт-енд девелъпър в Прогрес.
+Работя там от 10 години и не се срамувам да кажа,
+че обичам работата си.`
+            },
             footer: `Open your console to see the slide cues<br/><br/>
                      <a href="https://twitter.com/bundyo"><i class='fab fa-twitter'></i> @bundyo</a>`
         }, {
+            cue: {
+                text: `Сега ще ви разкажа една тъжна история. Драма и
+силни страсти се преплитат в нея като в индийски сериал,
+минус пеенето и танците. Накрая, след тегоби и неволи,
+тази история завършва...
+
+Всъщност няма да ви кажа как завършва - трябва да има
+и малко съспенс!`
+            },
             quote: {
                 text: `"I wondered about that," said Nanny.<br/>"Then I thought maybe I was imagining things."<br/><br/>
                        "No point in imagining anything," said Granny.<br/>"Things are bad enough as they are."`,
@@ -43,6 +58,18 @@
             index: 1,
             title: "The Problem",
             subtitle: "or I have too many things that I'm not afraid to use",
+            cue: {
+                text: `Проблемът... Това е проблем, който съществува от
+създаването на компютрите. Бях там и знам - първият девелъпър
+си направи таблица от две клетки и сложи във всяка една от тях
+по една буква. Зъбните колела заскърцаха и компютърът изплю
+перфокарта, на която пишеше - "Недостатъчно памет - искам
+виртуализация!". Сега - толкова години напред във времето,
+положението е коренно различно - компютрите са бързи,
+паметта е много, браузърите са оптимизирани... И пак е пълно
+с хора, които искат да заредят един милион реда информация
+наведнъж, дори и без комбобокс на всеки ред!`
+            },
             quote: {
                 text: `I want to display a grid with 20 columns<br/>and a million rows<br/>
                        and I want to have a combobox in every cell`,
@@ -53,26 +80,54 @@
             title: "The Idea",
             subtitle: "or how to virtualize a list",
             image: "https://i.imgur.com/3uDhyuR.jpg",
+            cue: {
+                text: `И тогава ми просветна - ще виртуализирам листа!
+Ще направя така, че когато човек скролира страницата,
+на нея да бъдат само редовете, които са на екрана, а
+останалите да се премахват.`
+            }
         }, {
+            cue: {
+                text: `Ще напиша нов Vue компонент за виртуален лист,
+и ще го пусна с отворен код за свободно ползване!
+
+- Ама вече има няколко виртуални листа за Vue... -
+обади се глас в мен - защо ти е да пишеш нов?!`
+            },
             quote: {
                 text: `I know! I'll write a new virtual list component,<br/>
                        even though there are several already!`,
                 author: "Me"
             }
         }, {
+            cue: {
+                text: `Е как защо - за чест и слава, а и лекция в Дев.бг!
+
+Ще бъде лесно - ще инициализирам един
+IntersectionObserver и ще го оставя да си върши работата!`
+            },
             quote: {
                 text: `It would be easy - initialize an IntersectionObserver<br/>
                        and scroll 'till you drop!`,
                 author: "Also me"
             }
         }, {
+            cue: {
+                text: `Това е вътрешният ми глас...`
+            },
             image: "https://i.imgur.com/3OCOoRq.jpg"
         }, {
             index: 3,
             title: "The Good, the Bad and the IntersectionObserver",
             subtitle: "or who brought a knife to the gunfight",
+            cue: {
+                text: ``
+            },
             image: "https://media.giphy.com/media/xD2E9byuH9HQk/giphy.gif"
         }, {
+            cue: {
+                text: ``
+            },
             quote: {
                 text: `The Intersection Observer API provides a way to<br/>
                        asynchronously observe changes in the intersection<br/>
@@ -81,6 +136,9 @@
                 author: "MDN"
             }
         }, {
+            cue: {
+                text: ``
+            },
             quote: {
                 text: `The Intersection Observer API lets code register<br/>
                        a callback function that is executed whenever<br/>
@@ -92,33 +150,54 @@
             index: 4,
             title: "Look Ma' - no Scrolling",
             subtitle: "or how I saw the light in passive events",
+            cue: {
+                text: ``
+            },
             image: "https://media.giphy.com/media/SqmkZ5IdwzTP2/giphy.gif"
         }, {
             index: 5,
             title: "Alternating Rows from Hell",
             subtitle: "or why is CSS so haard :(",
+            cue: {
+                text: ``
+            },
             image: "https://media.giphy.com/media/2rj8VysAig8QE/giphy.gif"
         }, {
             index: 6,
             title: 'The Ugly Word "Performance"',
             subtitle: "or who let the computed dogs out",
+            cue: {
+                text: ``
+            },
             image: "https://media.giphy.com/media/5nj4KLBy2mhkH1pUWT/giphy.gif"
         }, {
             index: 7,
             title: "The Return of the IntersectionObserver",
             subtitle: "or how I learned to stop worrying and love the transitions",
+            cue: {
+                text: ``
+            },
             image: "https://media.giphy.com/media/A5a7hsfYMg5BS/giphy.gif"
         }, {
             index: 8,
             title: "The Bottom End of the DOM Element",
             subtitle: "or why I entered the unknown",
+            cue: {
+                text: ``
+            },
             image: "https://i.imgur.com/dGxhCeZ.jpg"
         }, {
             index: 9,
             title: "Easy-Peasy APZ",
             subtitle: "or how Mozilla destroyed the EViL (Every Virtual List)",
+            cue: {
+                text: ``
+            },
             image: "https://media.giphy.com/media/ydBzMGqNz2ehG/giphy.gif"
         }, {
+            cue: {
+                text: ``
+            },
             quote: {
                 text: `With APZ, scrolling is decoupled from the JavaScript thread,<br/>
                        and happens on its own, leading to a smoother<br/>
@@ -135,6 +214,9 @@
             index: 10,
             title: "The Sticky Rescue",
             subtitle: "or how it saved someone else",
+            cue: {
+                text: ``
+            },
             quote: {
                 text: `Usually this delay will be of a few frames only,<br/>
                        but sometimes we can bypass it by using<br/>
@@ -146,21 +228,33 @@
             index: 11,
             title: "Fixed and Forgotten",
             subtitle: "or the fix(ed) that didn't fix(ed)",
+            cue: {
+                text: ``
+            },
             image: "https://i.imgur.com/jgSSoML.jpg"
         }, {
             index: 12,
             title: "Hand in Hand thro' the Rye",
             subtitle: "or there is a light at the end of the tunnel",
+            cue: {
+                text: ``
+            },
             image: "https://media.giphy.com/media/hyQ8ESUyePo2s/giphy.gif"
         }, {
             index: 13,
             title: "In an Event of an Event",
             subtitle: "or is it bright enough for a train?",
+            cue: {
+                text: ``
+            },
             image: "https://media.giphy.com/media/8CAFRDokyQkhi/giphy.gif"
         }, {
             index: 14,
             title: "The End of Everything",
             subtitle: "or just everything in this session",
+            cue: {
+                text: ``
+            },
             quote: {
                 text: "Just imagine how terrible it might have been,<br/>if we'd been at all competent.",
                 author: "Terry Pratchett",
@@ -177,7 +271,7 @@
                        </fusion-list>`,
 
             components:{
-                "fusion-list": "url:https://bundyo.org/v/list.vue"
+                "fusion-list": "url:../src/components/list.vue"
             },
 
             created() {

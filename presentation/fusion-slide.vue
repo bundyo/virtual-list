@@ -35,7 +35,8 @@
                 this.shown = 1;
 
                 if (this.item && this.item.cue && console) {
-                    console.log(this.item.cue);
+                    console.log("%c--------------------------", "font-size: large");
+                    console.log(`%c${this.item.cue.text}`, this.item.cue.css || "color: #42b883; font-size: large");
                 }
             },
 
@@ -48,7 +49,7 @@
 
 <style>
     .fs-slide {
-        height: 100%;
+        height: calc(100% + 1px);
         transition: opacity 200ms ease-out;
         will-change: contents;
         align-items: center;
