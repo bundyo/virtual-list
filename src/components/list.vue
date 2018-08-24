@@ -1,8 +1,8 @@
 <template>
-    <div class="fs-list" tabindex="-1">
+    <div class="fs-list">
         <div ref="content" class="fs-list-content">
             <component :is="rowComponent" v-for="(item, key) in view" :key="key + index" :item="item" class="fs-list-row"
-                       :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }"
+                       :index="key + index" :style="{ marginTop: key === 0 && firstMargin || 0 }"
                        v-notify-mount @mounted="$nextTick(() => observer.observe($event))">
             </component>
             <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
@@ -15,15 +15,8 @@
 
 <script>
     const maxHeight = 10000000;
-    const keys = {
-        "ArrowDown": .05,
-        "ArrowUp": -.05,
-        "PageDown": 1,
-        "PageUp": -1,
-        "Space": 1
-    };
 
-    module.exports = {
+    export default {
         name: "fusion-list",
         props: {
             textField: {
@@ -72,7 +65,7 @@
             },
 
             scrollCallback() {
-                const endOffset = this.source.length - this._getRows().length;
+                const endOffset = this.source.length - this.visibleCount;
 
                 let index = Math.round(this.scroller.scrollTop / this.rowHeight * this.scale) - this.indexOffset;
 
@@ -83,25 +76,6 @@
 
                 this.index = index;
                 this.content.scrollTop = this.scroller.scrollTop;
-            },
-
-            passWheel(e) {
-                if (e.deltaMode) {
-                    const lineHeight = keys["ArrowDown"] * this.content.clientHeight;
-
-                    this.scroller.scrollTop += e.deltaY * lineHeight;
-                    this.scroller.scrollLeft += e.deltaX * lineHeight;
-                } else {
-                    this.scroller.scrollTop += e.deltaY;
-                    this.scroller.scrollLeft += e.deltaX;
-                }
-            },
-
-            passKeys(e) {
-                keys[e.code] && this.scroller.scroll({
-                    top: this.scroller.scrollTop + keys[e.code] * this.content.clientHeight,
-                    behavior: e.repeat ? "instant" : "smooth"
-                });
             }
         },
 
@@ -118,7 +92,7 @@
 
                 if (len) {
                     const firstRowRect = rows.shift().getBoundingClientRect();
-                    const lastRowRect = len > 1 && rows.pop().getBoundingClientRect();
+                    const lastRowRect = rows.pop().getBoundingClientRect();
 
                     this.rowHeight = Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / len);
 
@@ -127,11 +101,10 @@
                     this.scale = sizerHeight / maxHeight;
                     this.scale <= 1 && (this.scale = Math.ceil(this.scale));
 
-                    this.firstMargin = this.index * this.rowHeight / this.scale;
+                    this.firstMargin = `${this.index * this.rowHeight / this.scale}px`;
                     this.visibleCount = Math.ceil(this.content.clientHeight / this.rowHeight);
                     this.indexOffset = Math.floor((this.pageSize - this.visibleCount) / 2);
-                    this.sizerHeight = `${this.scale <= 1 ? sizerHeight :
-                        Math.max(this.pageSize * this.rowHeight + this.firstMargin, sizerHeight / this.scale)}px`;
+                    this.sizerHeight = `${sizerHeight / this.scale}px`;
                 }
             }
         },
@@ -139,10 +112,6 @@
         mounted() {
             this.content = this.$refs.content;
             this.scroller = this.$refs.scroller;
-            const passProxy = this.passKeys.bind(this);
-
-            this.content.addEventListener("wheel", this.passWheel.bind(this), true);
-            this.$el.addEventListener("keydown", passProxy);
 
             this.scroller.addEventListener("scroll", this.scrollCallback.bind(this), { passive: true });
 
@@ -153,8 +122,6 @@
             });
 
             this.index = 0;
-
-            this.$emit("mounted");
         },
     }
 </script>
@@ -162,7 +129,6 @@
 <style scoped>
     .fs-list {
         height: 100%;
-        display: flex;
     }
 
     .fs-list-content,
@@ -175,16 +141,9 @@
     }
 
     .fs-list-content {
+        position: absolute;
         overflow: hidden;
         width: 100%;
-        top: 0;
-        flex: 1;
-    }
-
-    .fs-scroller {
-        min-width: 17px;
-        flex-basis: fit-content;
-        outline: none;
     }
 
     .fs-sizer {
@@ -193,6 +152,6 @@
         left: 0;
         width: 0;
         height: 100%;
-        border-left: 1px solid transparent;
+        border: 1px solid transparent;
     }
 </style>

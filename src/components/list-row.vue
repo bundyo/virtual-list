@@ -6,7 +6,7 @@
 </template>
 
 <script>
-    module.exports = {
+    export default {
         name: "fusion-list-row",
 
         props: ["item", "index"],
@@ -41,7 +41,6 @@
 
     .fs-list-row > span {
         flex: 1;
-        padding: 10px;
     }
 
     .fs-list-row:nth-child(2n) {
