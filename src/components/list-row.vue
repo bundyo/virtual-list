@@ -6,7 +6,7 @@
 </template>
 
 <script>
-    module.exports = {
+    export default {
         name: "fusion-list-row",
 
         props: ["item", "index"],
@@ -26,6 +26,22 @@
                 this.shown = .5;
             }
         },
+
+        watch: {
+            index(value) {
+                this.$el.__key__ = value;
+            }
+        },
+
+        mounted() {
+            this.$el.__key__ = this.index;
+
+            this.$emit("mounted", this.$el);
+        },
+
+        unmounted() {
+            this.$emit("unmounted", this.$el);
+        }
     }
 </script>
 
