@@ -6,7 +6,7 @@
 </template>
 
 <script>
-    module.exports = {
+    export default {
         name: "fusion-list-row",
 
         props: ["item", "index"],
@@ -26,6 +26,22 @@
                 this.shown = .5;
             }
         },
+
+        watch: {
+            index(value) {
+                this.$el.__key__ = value;
+            }
+        },
+
+        mounted() {
+            this.$el.__key__ = this.index;
+
+            this.$emit("mounted", this.$el);
+        },
+
+        unmounted() {
+            this.$emit("unmounted", this.$el);
+        }
     }
 </script>
 
@@ -33,6 +49,8 @@
     .fs-list-row {
         height: 40px;
         display: flex;
+        border: solid red;
+        border-width: 1px 0;
         flex-direction: row;
         transition: opacity 200ms ease-out;
         will-change: contents;
