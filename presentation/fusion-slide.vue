@@ -36,7 +36,7 @@
 
                 if (this.item && this.item.cue && console) {
                     console.log("%c--------------------------", "font-size: large");
-                    console.log(`%c${this.item.cue.text}`, this.item.cue.css || "color: #42b883; font-size: large");
+                    console.log(`%c${this.item.cue.text}`, this.item.cue.css || "color: #42b883; font-size: 16px");
                 }
             },
 
