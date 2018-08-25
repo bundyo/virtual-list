@@ -17,9 +17,6 @@
                 type: String,
                 default: "text"
             },
-            step: {
-                default: 2
-            },
             pageSize: {
                 default: 10
             },
