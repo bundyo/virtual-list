@@ -49,7 +49,7 @@
 
 <style>
     .fs-slide {
-        height: calc(100% + 1px);
+        height: calc(100% + .2px);
         transition: opacity 200ms ease-out;
         will-change: contents;
         align-items: center;
