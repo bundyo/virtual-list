@@ -1,7 +1,9 @@
 <template>
     <div class="fs-list-row" :style="{ opacity: this.shown }">
-        <span>{{ index }}</span>
-        <span>{{ item.text }}</span>
+        <template v-for="(column, idx) in columns" class="fs-list-column">
+            <slot :name="idx+1"></slot>
+            <span :key="idx+1" v-html="row[column.field]"></span>
+        </template>
     </div>
 </template>
 
@@ -9,7 +11,28 @@
     module.exports = {
         name: "fusion-list-row",
 
-        props: ["item", "index"],
+        props: {
+            row: {},
+
+            index: {},
+
+            columns: {},
+
+            textField: {
+                type: String,
+                default: "text"
+            },
+
+            valueField: {
+                type: String,
+                default: "value"
+            },
+
+            iconClassField: {
+                type: String,
+                default: "iconClass"
+            }
+        },
 
         data() {
             return {
@@ -25,7 +48,7 @@
             hiding() {
                 this.shown = .5;
             }
-        },
+        }
     }
 </script>
 
@@ -40,7 +63,6 @@
     }
 
     .fs-list-row > span {
-        flex: 1;
         padding: 10px;
     }
 
