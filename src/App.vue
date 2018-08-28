@@ -1,6 +1,11 @@
 <template>
     <div id="app">
-        <fusion-list :source="source" page-size="40"/>
+        <fusion-list :source="source" columns="150px index, * text">
+            <span slot="1" slot-scope="{ row, field, index }">
+                <input type="checkbox"/>
+                Checkbox {{ index }}
+            </span>
+        </fusion-list>
     </div>
 </template>
 
@@ -18,7 +23,7 @@
     Vue.component(list.name, list);
     Vue.component(listRow.name, listRow);
 
-    const source = [...Array(10000)].map((_, text) => ({ text: `Text ${text}` }));
+    const source = [...Array(1000)].map((_, idx) => ({ index: idx, text: `Text ${idx}` }));
 
     export default {
         name: "app",
