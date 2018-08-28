@@ -1,17 +1,17 @@
 <template>
-    <div class="fs-list" tabindex="-1" :class="typeClasses" @mousedown="onClick" @keydown="onKeyDown" @focus="onFocus" @blur="onBlur">
+    <div class="fs-list" :tabindex="tabbingIndex" :class="typeClasses" @keydown="onKeyDown" @focus="onFocus" @blur="onBlur">
         <component :is="rowComponent" v-if="header" :columns="parsedColumns" class="fs-list-header">
             <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ field }">
                 <slot :name="`header-${idx+1}`" :field="field"></slot>
             </template>
         </component>
         <div class="fs-list-body">
-            <div ref="content" class="fs-list-content" :class="{ '-focused': hasFocus }" @wheel.capture="passWheel"
+            <div ref="content" class="fs-list-content" @wheel.capture="passWheel"
                  @mousedown.capture="suspendUpdates" @mouseup.capture="resumeUpdates">
                 <component :is="rowComponent" v-for="(row, key) in view" :key="key + index" :row="row" class="fs-list-row"
                            :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }" v-bind="$attrs"
                            :columns="parsedColumns" @mousedown.native.stop @select="onSelectRow" :disabled-field="disabledField"
-                           v-notify-mount @mounted="$nextTick(() => observer.observe($event))">
+                           v-notify-mount @mounted="$nextTick(() => observer.observe($event))" :multiple="multiple">
                     <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ row, field, index }">
                         <slot :name="idx+1" :row="row" :field="field" :index="index"></slot>
                     </template>
@@ -65,7 +65,7 @@
                 type: Array,
                 default: () => []
             },
-            "row-component": {
+            rowComponent: {
                 default: "fusion-list-row"
             },
             columns: {
@@ -89,11 +89,14 @@
             pageSize: {
                 default: 40
             },
+            virtual: {
+                type: Boolean
+            },
             selectable: {
                 type: Boolean
             },
-            virtual: {
-                type: Boolean
+            multiple: {
+                default: false
             },
             autoscroll: {
                 type: Boolean
@@ -133,7 +136,7 @@
 
         methods: {
             _getRows() {
-                return Array.from(this.content.querySelectorAll(".fs-list-row:not(.fs-sizer)"));
+                return Array.from(this.content.querySelectorAll(".fs-list-row"));
             },
 
             intersectionCallback(entries) {
@@ -190,13 +193,33 @@
                 this.hasFocus = false;
             },
 
-            onClick() {
-            },
+            onSelectRow(index, row) {
+                if (this.multiple !== false) {
+                    this.$emit("select", _.filter(this.source, [this.selectedField, true]));
 
-            onSelectRow() {
+                    return;
+                }
+
+                if (row[this.selectedField]) {
+                    _.forEach(this.source, (value, key) => {
+                        if (value[this.selectedField] && key !== index) {
+                            value[this.selectedField] = false;
+                        }
+                    });
+
+                    this.$emit("select", row);
+                }
             },
 
             onKeyDown(e) {
+                if (this.hasSelection) {
+                    if (event.key === "ArrowUp") {
+                        this.selectRow(this.itemList[this.selectedRow - 1]);
+                    } else if (event.key === "ArrowDown") {
+                        this.selectRow(this.itemList[this.selectedRow + 1]);
+                    }
+                }
+
                 if (!this.virtual) {
                     return;
                 }
@@ -275,17 +298,18 @@
         },
 
         watch: {
-            index() {
+            view() {
+                this.itemList = this._getRows();
+
                 if (!this.virtual) {
                     return;
                 }
 
-                const rows = this._getRows();
-                const len = rows.length;
+                const len = this.itemList.length;
 
                 if (len) {
-                    const firstRowRect = rows.shift().getBoundingClientRect();
-                    const lastRowRect = len > 1 && rows.pop().getBoundingClientRect();
+                    const firstRowRect = this.itemList.shift().getBoundingClientRect();
+                    const lastRowRect = len > 1 && this.itemList.pop().getBoundingClientRect();
 
                     this.rowHeight = Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / len);
 
