@@ -147,7 +147,7 @@
 
             scrollCallback() {
                 if (!this.virtual) {
-                    return
+                    return;
                 }
 
                 const endOffset = this.source.length - this._getRows().length;
@@ -168,7 +168,7 @@
 
             passWheel(e) {
                 if (!this.virtual) {
-                    return
+                    return;
                 }
 
                 if (e.deltaMode) {
@@ -212,12 +212,20 @@
             },
 
             suspendUpdates() {
+                if (!this.virtual) {
+                    return;
+                }
+
                 this.suspended = true;
 
                 this.content.addEventListener("scroll", this.updateProxy);
             },
 
             resumeUpdates() {
+                if (!this.virtual) {
+                    return;
+                }
+
                 this.suspended = false;
 
                 this.content.removeEventListener("scroll", this.updateProxy);
@@ -226,7 +234,7 @@
 
         computed: {
             view() {
-                return this.source.slice(this.index, this.index + +this.pageSize);
+                return this.virtual ? this.source.slice(this.index, this.index + +this.pageSize) : this.source;
             },
 
             types() {
@@ -268,6 +276,10 @@
 
         watch: {
             index() {
+                if (!this.virtual) {
+                    return;
+                }
+
                 const rows = this._getRows();
                 const len = rows.length;
 
@@ -295,15 +307,17 @@
             this.content = this.$refs.content;
             this.scroller = this.$refs.scroller;
 
-            this.scroller.addEventListener("scroll", this.scrollCallback.bind(this));
+            if (this.virtual) {
+                this.scroller.addEventListener("scroll", this.scrollCallback.bind(this));
+
+                this.index = 0;
+            }
 
             this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
                 root: this.content,
                 rootMargin: "0px",
                 threshold: 0
             });
-
-            this.index = 0;
 
             this.$emit("mounted");
         }

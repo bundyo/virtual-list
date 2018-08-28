@@ -1,6 +1,6 @@
 <template>
     <div id="app">
-        <fusion-list :source="source" columns="150px index, * text" virtual>
+        <fusion-list :source="source" columns="150px index, * text">
             <span slot="1" slot-scope="{ row, field, index }">
                 <input type="checkbox"/>
                 Checkbox {{ index }}
@@ -23,7 +23,7 @@
     Vue.component(list.name, list);
     Vue.component(listRow.name, listRow);
 
-    const source = [...Array(10000)].map((_, idx) => ({ index: idx, text: `Text ${idx}` }));
+    const source = [...Array(1000)].map((_, idx) => ({ index: idx, text: `Text ${idx}` }));
 
     export default {
         name: "app",
