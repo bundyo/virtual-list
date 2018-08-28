@@ -500,9 +500,10 @@ JavaScript developer с front-end способности
         new Vue({
             el: "#app",
 
-            template: `<fusion-list :source="source" page-size="5" row-component="fusion-slide" ref="list" @mounted="onListMount">
+            template: `<fusion-list :source="source" page-size="5" row-component="fusion-slide" ref="list"
+                                    @mounted="onListMount" :header="false" virtual>
                            <!- Force Vue to load async browser SFC component ->
-                           <fusion-slide :item="{}"></fusion-slide>
+                           <fusion-slide :row="{}"></fusion-slide>
                        </fusion-list>`,
 
             components:{

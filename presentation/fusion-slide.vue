@@ -1,20 +1,20 @@
 <template>
-    <div class="fs-slide" :style="{ opacity: this.shown }" :class="{ [`-slide-${item.index}`]: true }">
-        <div v-if="item.title || item.subtitle" class="slide__header" :index="item.index">
-            <span v-if="item.title" class="slide__title" v-html="item.title"></span>
-            <span v-if="item.subtitle" class="slide__subtitle" v-html="item.subtitle"></span>
+    <div class="fs-slide" :style="{ opacity: this.shown }" :class="{ [`-slide-${row.index}`]: true }">
+        <div v-if="row.title || row.subtitle" class="slide__header" :index="row.index">
+            <span v-if="row.title" class="slide__title" v-html="row.title"></span>
+            <span v-if="row.subtitle" class="slide__subtitle" v-html="row.subtitle"></span>
         </div>
-        <div v-if="item.quote" class="slide__quote">
-            <span v-if="item.quote.text" class="slide__quote-text" v-html="item.quote.text"></span>
-            <div v-if="item.quote.author || item.quote.book">
-                <span v-if="item.quote.author" class="slide__quote-author" v-html="item.quote.author"></span>
-                <span v-if="item.quote.book" class="slide__quote-book" v-html="item.quote.book"></span>
+        <div v-if="row.quote" class="slide__quote">
+            <span v-if="row.quote.text" class="slide__quote-text" v-html="row.quote.text"></span>
+            <div v-if="row.quote.author || row.quote.book">
+                <span v-if="row.quote.author" v-html="row.quote.author"></span>
+                <span v-if="row.quote.book" class="slide__quote-book" v-html="row.quote.book"></span>
             </div>
         </div>
-        <div v-if="item.image" class="slide__image">
-            <img :src="item.image"/>
+        <div v-if="row.image" class="slide__image">
+            <img :src="row.image"/>
         </div>
-        <div v-if="item.footer" class="slide__footer" v-html="item.footer"></div>
+        <div v-if="row.footer" class="slide__footer" v-html="row.footer"></div>
     </div>
 </template>
 
@@ -22,7 +22,7 @@
     module.exports = {
         name: "fusion-slide",
 
-        props: ["item", "index"],
+        props: ["row", "columns", "index"],
 
         data() {
             return {
@@ -34,9 +34,9 @@
             showing() {
                 this.shown = 1;
 
-                if (this.item && this.item.cue && console) {
+                if (this.row && this.row.cue && console) {
                     console.log("%c--------------------------", "font-size: large");
-                    console.log(`%c${this.item.cue.text}`, this.item.cue.css || "color: #42b883; font-size: 16px");
+                    console.log(`%c${this.row.cue.text}`, this.row.cue.css || "color: #42b883; font-size: 16px");
                 }
             },
 
