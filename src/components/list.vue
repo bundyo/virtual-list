@@ -1,24 +1,28 @@
 <template>
     <div class="fs-list" tabindex="-1" :class="typeClasses" @mousedown="onClick" @keydown="onKeyDown" @focus="onFocus" @blur="onBlur">
-        <!--<component :is="rowComponent" v-if="header" :columns="parsedColumns" class="fs-list-header">-->
-            <!--<template v-for="(column, idx) in parsedColumns" :slot="idx+1">-->
-                <!--<slot :name="'header-' + (idx+1)"></slot>-->
-            <!--</template>-->
-        <!--</component>-->
-        <div ref="content" class="fs-list-content" :class="{ '-focused': hasFocus }">
-            <component :is="rowComponent" v-for="(row, key) in view" :key="key + index" :row="row" class="fs-list-row"
-                       :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }" v-bind="$attrs"
-                       :columns="parsedColumns" @mousedown.native.stop @select="onSelectRow" :disabled-field="disabledField"
-                       v-notify-mount @mounted="$nextTick(() => observer.observe($event))">
-                <slot v-for="(column, idx) in parsedColumns" :slot="idx+1" :name="idx+1" :row="row"
-                      :field="column.field" :index="idx"></slot>
-            </component>
-            <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
+        <component :is="rowComponent" v-if="header" :columns="parsedColumns" class="fs-list-header">
+            <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ field }">
+                <slot :name="`header-${idx+1}`" :field="field"></slot>
+            </template>
+        </component>
+        <div class="fs-list-body">
+            <div ref="content" class="fs-list-content" :class="{ '-focused': hasFocus }" @wheel.capture="passWheel"
+                 @mousedown.capture="suspendUpdates" @mouseup.capture="resumeUpdates">
+                <component :is="rowComponent" v-for="(row, key) in view" :key="key + index" :row="row" class="fs-list-row"
+                           :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }" v-bind="$attrs"
+                           :columns="parsedColumns" @mousedown.native.stop @select="onSelectRow" :disabled-field="disabledField"
+                           v-notify-mount @mounted="$nextTick(() => observer.observe($event))">
+                    <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ row, field, index }">
+                        <slot :name="idx+1" :row="row" :field="field" :index="index"></slot>
+                    </template>
+                </component>
+                <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
+            </div>
+            <div v-if="virtual" class="fs-scroller" ref="scroller" tabindex="-1">
+                <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
+            </div>
         </div>
-        <div v-if="virtual" class="fs-scroller" ref="scroller" tabindex="-1">
-            <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
-        </div>
-        <div v-if="columns" v-html="style"></div>
+        <div v-show="false" v-if="columns" v-html="style"></div>
     </div>
 </template>
 
@@ -119,9 +123,11 @@
                 sizerHeight: "1px",
                 selectedRow: -1,
                 hasFocus: false,
+                suspended: false,
                 tabbingIndex: this.selectable ? this.tabindex || 0 : undefined,
                 hasSelection: this.selectable,
-                passProxy: this.passKeys.bind(this)
+
+                updateProxy: this.updateScroller.bind(this)
             };
         },
 
@@ -140,6 +146,10 @@
             },
 
             scrollCallback() {
+                if (!this.virtual) {
+                    return
+                }
+
                 const endOffset = this.source.length - this._getRows().length;
 
                 let index = Math.round(this.scroller.scrollTop / this.rowHeight * this.scale) - this.indexOffset;
@@ -150,10 +160,17 @@
                 index > endOffset && (index = endOffset);
 
                 this.index = index;
-                this.content.scrollTop = this.scroller.scrollTop;
+
+                if (!this.suspended) {
+                    this.content.scrollTop = this.scroller.scrollTop;
+                }
             },
 
             passWheel(e) {
+                if (!this.virtual) {
+                    return
+                }
+
                 if (e.deltaMode) {
                     const lineHeight = keys["ArrowDown"] * this.content.clientHeight;
 
@@ -163,27 +180,6 @@
                     this.scroller.scrollTop += e.deltaY;
                     this.scroller.scrollLeft += e.deltaX;
                 }
-            },
-
-            passKeys(e) {
-                keys[e.code] && this.scroller.scroll({
-                    top: this.scroller.scrollTop + keys[e.code] * this.content.clientHeight,
-                    behavior: e.repeat ? "instant" : "smooth"
-                });
-            },
-
-            detachCallbacks() {
-                this.content.removeEventListener("wheel", this.passWheel.bind(this), true);
-                this.$el.removeEventListener("keydown", this.passProxy);
-
-                this.scroller.removeEventListener("scroll", this.scrollCallback.bind(this));
-            },
-
-            attachCallbacks() {
-                this.content.addEventListener("wheel", this.passWheel.bind(this), true);
-                this.$el.addEventListener("keydown", this.passProxy);
-
-                this.scroller.addEventListener("scroll", this.scrollCallback.bind(this));
             },
 
             onFocus() {
@@ -200,7 +196,31 @@
             onSelectRow() {
             },
 
-            onKeyDown() {
+            onKeyDown(e) {
+                if (!this.virtual) {
+                    return;
+                }
+
+                keys[e.code] && this.scroller.scroll({
+                    top: this.scroller.scrollTop + keys[e.code] * this.content.clientHeight,
+                    behavior: e.repeat ? "instant" : "smooth"
+                });
+            },
+
+            updateScroller() {
+                this.scroller.scrollTop = this.content.scrollTop;
+            },
+
+            suspendUpdates() {
+                this.suspended = true;
+
+                this.content.addEventListener("scroll", this.updateProxy);
+            },
+
+            resumeUpdates() {
+                this.suspended = false;
+
+                this.content.removeEventListener("scroll", this.updateProxy);
             }
         },
 
@@ -275,9 +295,7 @@
             this.content = this.$refs.content;
             this.scroller = this.$refs.scroller;
 
-            if (this.virtual) {
-                this.attachCallbacks();
-            }
+            this.scroller.addEventListener("scroll", this.scrollCallback.bind(this));
 
             this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
                 root: this.content,
@@ -288,12 +306,6 @@
             this.index = 0;
 
             this.$emit("mounted");
-        },
-
-        beforeDestroy() {
-            if (this.virtual) {
-                this.detachCallbacks();
-            }
         }
     }
 </script>
@@ -302,6 +314,13 @@
     .fs-list {
         height: 100%;
         display: flex;
+        flex-direction: column;
+    }
+
+    .fs-list-body {
+        flex: 1;
+        min-height: 100px;
+        position: relative;
     }
 
     .fs-list-content,
@@ -316,16 +335,13 @@
     .fs-list-content {
         width: 100%;
         top: 0;
-        flex: 1;
-    }
-
-    .fs-list.-virtual > .fs-list-content {
-        overflow: hidden;
     }
 
     .fs-scroller {
+        position: absolute;
+        bottom: 0;
+        right: 0;
         min-width: 17px;
-        flex-basis: fit-content;
         outline: none;
     }
 

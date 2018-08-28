@@ -1,7 +1,10 @@
 <template>
     <div id="app">
-        <fusion-list :source="source" columns="100px index, * text" virtual>
-            <span slot="1" slot-scope="{ row, field }" v-html="`Blah ${row[field]}`"></span>
+        <fusion-list :source="source" columns="150px index, * text" virtual>
+            <span slot="1" slot-scope="{ row, field, index }">
+                <input type="checkbox"/>
+                Checkbox {{ index }}
+            </span>
         </fusion-list>
     </div>
 </template>

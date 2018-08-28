@@ -1,8 +1,9 @@
 <template>
-    <div class="fs-list-row" :style="{ opacity: this.shown }">
+    <div class="fs-list-row" :style="{ opacity: row && this.shown }">
         <template v-for="(column, idx) in columns" class="fs-list-column">
-            <slot :name="idx+1"></slot>
-            <span :key="idx+1" v-html="row[column.field]"></span>
+            <slot v-if="row && $parent.$scopedSlots[idx+1] || $parent.$scopedSlots[`header-${idx+1}`]"
+                  :name="idx+1" :row="row" :field="column.field" :index="index"></slot>
+            <span v-else :key="idx+1" v-html="row ? row[column.field] : column.field"></span>
         </template>
     </div>
 </template>
@@ -11,28 +12,7 @@
     module.exports = {
         name: "fusion-list-row",
 
-        props: {
-            row: {},
-
-            index: {},
-
-            columns: {},
-
-            textField: {
-                type: String,
-                default: "text"
-            },
-
-            valueField: {
-                type: String,
-                default: "value"
-            },
-
-            iconClassField: {
-                type: String,
-                default: "iconClass"
-            }
-        },
+        props: [ "row", "index", "columns" ],
 
         data() {
             return {
@@ -53,6 +33,10 @@
 </script>
 
 <style scoped>
+    .fs-list-header {
+        width: 100%;
+    }
+
     .fs-list-row {
         height: 40px;
         display: flex;
