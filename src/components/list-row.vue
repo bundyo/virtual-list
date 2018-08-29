@@ -2,26 +2,13 @@
     <div class="fs-list-row" :style="{ opacity: row && this.shown }" :class="typeClasses" @mousedown.stop="onClick">
         <template v-for="(column, idx) in columns" class="fs-list-column">
             <slot v-if="row && $parent.$scopedSlots[idx+1] || $parent.$scopedSlots[`header-${idx+1}`]"
-                  :name="idx+1" :row="row" :field="column.field" :index="index"></slot>
+                  :name="idx+1" :row="row" :field="column.field" :index="index" :selectedField="selectedField"></slot>
             <span v-else :key="idx+1" v-html="row ? row[column.field] : column.field"></span>
         </template>
     </div>
 </template>
 
 <script>
-    function convertToObject(str) {
-        const splitStr = str ? str.split(" ") : [];
-        const map = str ? Object.assign(...splitStr.map(key => ({ [key]: true }))) : {};
-
-        map.classes = str ? Object.assign(...splitStr.map(key => ({ [`-${key}`]: true }))) : {};
-
-        return map;
-    }
-
-    function getTypeClasses(types, extensions, defaultTypes) {
-        return Object.assign(defaultTypes ? defaultTypes.map(key => ({ [key]: true })) : {}, types.classes, extensions);
-    }
-
     module.exports = {
         name: "fusion-list-row",
 
@@ -30,9 +17,7 @@
                 default: ""
             },
 
-            row: {
-                default: () => {}
-            },
+            row: {},
 
             columns: {
                 default: () => []
@@ -40,10 +25,6 @@
 
             index: {
                 default: -1
-            },
-
-            valueField: {
-                default: "value"
             },
 
             selectedField: {
@@ -61,22 +42,17 @@
 
         data() {
             return {
-                shown: .5
+                shown: .5,
+                types: {}
             };
         },
 
         computed: {
-            isSelected() {
-                return this.row && this.row[this.selectedField];
-            },
-
-            types() {
-                return convertToObject(this.look);
-            },
-
             typeClasses() {
-                return getTypeClasses(this.types, {
-                    "-selected": this.isSelected,
+                this.types = this.$fusion.convertToObject(this.look);
+
+                return this.$fusion.getTypeClasses(this.types, {
+                    "-selected": this.row && this.row[this.selectedField],
                     "-disabled": this.row && this.row[this.disabledField]
                 });
             }
@@ -84,19 +60,18 @@
 
         methods: {
             onClick() {
-                 if (!this.row) {
-                     return;
-                 }
+                if (!this.row) {
+                    return;
+                }
 
-                 if (this.multiple === false && this.row[this.selectedField]) {
-                     return;
-                 }
+                if (this.multiple === false && this.row[this.selectedField]) {
+                    return;
+                }
 
-                 this.$set(this.row, this.selectedField, !this.row[this.selectedField]);
-             },
+                const newValue = !this.row[this.selectedField];
 
-            emitSelect() {
-                this.$emit("select", this.index, this.row);
+                this.$set(this.row, this.selectedField, newValue);
+                this.$emit("select", this.index, newValue);
             },
 
             showing() {
@@ -105,26 +80,6 @@
 
             hiding() {
                 this.shown = .5;
-            }
-        },
-
-        watch: {
-            row(value, oldValue) {
-                if (this.isSelected && !_.isEqual(value, oldValue)) {
-                    this.emitSelect();
-                }
-            },
-
-            isSelected(value, oldValue) {
-                if (value !== oldValue) {
-                    this.emitSelect();
-                }
-            },
-
-            mounted() {
-                if (this.isSelected) {
-                    this.emitSelect();
-                }
             }
         }
     };

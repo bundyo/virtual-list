@@ -12,8 +12,8 @@
                            :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }" v-bind="$attrs"
                            :columns="parsedColumns" @mousedown.native.stop @select="onSelectRow" :disabled-field="disabledField"
                            v-fusion-mount @mounted="$nextTick(() => observer.observe($event))">
-                    <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ row, field, index }">
-                        <slot :name="idx+1" :row="row" :field="field" :index="index"></slot>
+                    <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ row, field, index, selectedField }">
+                        <slot :name="idx+1" :row="row" :field="field" :index="index" :selectedField="selectedField"></slot>
                     </template>
                 </component>
                 <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
@@ -27,23 +27,6 @@
 </template>
 
 <script>
-    function cssId() {
-        return Math.random().toString(36).substr(2, 10);
-    }
-
-    function convertToObject(str) {
-        const splitStr = str ? str.split(" ") : [];
-        const map = str ? Object.assign(...splitStr.map(key => ({ [key]: true }))) : {};
-
-        map.classes = str ? Object.assign(...splitStr.map(key => ({ [`-${key}`]: true }))) : {};
-
-        return map;
-    }
-
-    function getTypeClasses(types, extensions, defaultTypes) {
-        return Object.assign(defaultTypes ? defaultTypes.map(key => ({ [key]: true })) : {}, types.classes, extensions);
-    }
-
     const maxHeight = 10000000;
     const keys = {
         "ArrowDown": .05,
@@ -116,7 +99,8 @@
 
         data() {
             return {
-                guidClass: `-${cssId()}`,
+                view: [],
+                guidClass: `-${this.$fusion.uniqId()}`,
                 index: null,
                 scale: 1,
                 content: null,
@@ -124,7 +108,7 @@
                 observer: null,
                 firstMargin: "1px",
                 sizerHeight: "1px",
-                selectedRow: -1,
+                selectedRows: [],
                 hasFocus: false,
                 suspended: false,
                 tabbingIndex: this.selectable ? this.tabindex || 0 : undefined,
@@ -193,31 +177,46 @@
                 this.hasFocus = false;
             },
 
-            onSelectRow(index, row) {
-                if (this.multiple !== false) {
-                    this.$emit("select", _.filter(this.source, [this.selectedField, true]));
+            onSelectRow(index, newValue) {
+                const selected = this.source[index];
 
-                    return;
-                }
+                this.$set(this.source[index], this.selectedField, newValue);
 
-                if (row[this.selectedField]) {
-                    _.forEach(this.source, (value, key) => {
+                this.selectedRows[index] = selected;
+
+                if (this.multiple === false) {
+                    this.selectedRows.forEach((value, key) => {
                         if (value[this.selectedField] && key !== index) {
-                            value[this.selectedField] = false;
+                            this.source[key][this.selectedField] = false;
+
+                            delete this.selectedRows[key];
                         }
                     });
-
-                    this.$emit("select", row);
                 }
+
+                this.view = this.virtual ? this.source.slice(this.index, this.index + +this.pageSize) : this.source;
+                this.$emit("select", this.multiple === false ? this.selectedRows[index] : Object.values(this.selectedRows));
             },
 
             onKeyDown(e) {
-                if (this.hasSelection) {
-                    if (event.key === "ArrowUp") {
-                        this.selectRow(this.itemList[this.selectedRow - 1]);
-                    } else if (event.key === "ArrowDown") {
-                        this.selectRow(this.itemList[this.selectedRow + 1]);
+                if (this.hasSelection && this.multiple === false && this.selectedRows.length) {
+                    const index = +Object.keys(this.selectedRows)[0];
+
+                    let selectedIndex;
+
+                    if (e.key === "ArrowUp") {
+                        selectedIndex = index - 1 >= 0 ? index - 1 : 0;
+                    } else if (e.key === "ArrowDown") {
+                        selectedIndex = index + 1 > this.source.length ? this.source.length : index + 1;
+                    } else {
+                        return;
                     }
+
+                    if (index !== selectedIndex) {
+                        this.onSelectRow(selectedIndex, !this.source[selectedIndex][this.selectedField]);
+                    }
+
+                    return;
                 }
 
                 if (!this.virtual) {
@@ -256,16 +255,12 @@
         },
 
         computed: {
-            view() {
-                return this.virtual ? this.source.slice(this.index, this.index + +this.pageSize) : this.source;
-            },
-
             types() {
-                return convertToObject(this.look);
+                return this.$fusion.convertToObject(this.look);
             },
 
             typeClasses() {
-                return getTypeClasses(this.types, {
+                return this.$fusion.getTypeClasses(this.types, {
                     "-disabled": this.disabled,
                     "-selectable": this.hasSelection,
                     "-scrollable": this.pageSize > 0,
@@ -298,32 +293,38 @@
         },
 
         watch: {
+            index() {
+                this.view = this.virtual ? this.source.slice(this.index, this.index + +this.pageSize) : this.source;
+            },
+
             view() {
-                this.itemList = this._getRows();
+                this.$nextTick(() => {
+                    this.itemList = this._getRows();
 
-                if (!this.virtual) {
-                    return;
-                }
+                    if (!this.virtual) {
+                        return;
+                    }
 
-                const len = this.itemList.length;
+                    const len = this.itemList.length;
 
-                if (len) {
-                    const firstRowRect = this.itemList.shift().getBoundingClientRect();
-                    const lastRowRect = len > 1 && this.itemList.pop().getBoundingClientRect();
+                    if (len) {
+                        const firstRowRect = this.itemList.shift().getBoundingClientRect();
+                        const lastRowRect = len > 1 && this.itemList.pop().getBoundingClientRect();
 
-                    this.rowHeight = Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / len);
+                        this.rowHeight = Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / len);
 
-                    const sizerHeight = this.source.length * this.rowHeight;
+                        const sizerHeight = this.source.length * this.rowHeight;
 
-                    this.scale = sizerHeight / maxHeight;
-                    this.scale <= 1 && (this.scale = Math.ceil(this.scale));
+                        this.scale = sizerHeight / maxHeight;
+                        this.scale <= 1 && (this.scale = Math.ceil(this.scale));
 
-                    this.firstMargin = this.index * this.rowHeight / this.scale;
-                    this.visibleCount = Math.ceil(this.content.clientHeight / this.rowHeight);
-                    this.indexOffset = Math.floor((this.pageSize - this.visibleCount) / 2);
-                    this.sizerHeight = `${this.scale <= 1 ? sizerHeight :
-                        Math.max(this.pageSize * this.rowHeight + this.firstMargin, sizerHeight / this.scale)}px`;
-                }
+                        this.firstMargin = this.index * this.rowHeight / this.scale;
+                        this.visibleCount = Math.ceil(this.content.clientHeight / this.rowHeight);
+                        this.indexOffset = Math.floor((this.pageSize - this.visibleCount) / 2);
+                        this.sizerHeight = `${this.scale <= 1 ? sizerHeight :
+                            Math.max(this.pageSize * this.rowHeight + this.firstMargin, sizerHeight / this.scale)}px`;
+                    }
+                });
             }
         },
 
@@ -333,9 +334,9 @@
 
             if (this.virtual) {
                 this.scroller.addEventListener("scroll", this.scrollCallback.bind(this));
-
-                this.index = 0;
             }
+
+            this.index = 0;
 
             this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
                 root: this.content,

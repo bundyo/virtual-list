@@ -1,8 +1,8 @@
 <template>
     <div id="app">
-        <fusion-list :source="source" columns="150px index, * text" virtual selectable>
-            <span slot="1" slot-scope="{ row, field, index }">
-                <input type="checkbox"/>
+        <fusion-list :source="source" columns="150px index, * text" virtual selectable @select="onSelect">
+            <span slot="1" slot-scope="{ row, field, index, selectedField }">
+                <fusion-checkbox v-model="row[selectedField]" />
                 Checkbox {{ index }}
             </span>
         </fusion-list>
@@ -10,10 +10,16 @@
 </template>
 
 <script>
-    const source = [...Array(1000)].map((_, idx) => ({ index: idx, text: `Text ${idx}` }));
+    const source = [...Array(1000000)].map((_, idx) => ({ index: idx, text: `Text ${idx}` }));
 
     export default {
         name: "app",
+
+        methods: {
+            onSelect(value) {
+                console.log(value);
+            }
+        },
 
         created() {
             this.source = source;

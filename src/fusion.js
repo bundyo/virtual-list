@@ -30,7 +30,26 @@ const fusion = {
             }
 
             return createImportPromise(module, Vue);
-        }
+        };
+
+        Vue.prototype.$fusion = {
+            uniqId() {
+                return Math.random().toString(36).substr(2, 10);
+            },
+
+            convertToObject(str) {
+                const splitStr = str ? str.split(" ") : [];
+                const map = str ? Object.assign(...splitStr.map(key => ({ [key]: true }))) : {};
+
+                map.classes = str ? Object.assign(...splitStr.map(key => ({ [`-${key}`]: true }))) : {};
+
+                return map;
+            },
+
+            getTypeClasses(types, extensions, defaultTypes) {
+                return Object.assign(defaultTypes ? defaultTypes.map(key => ({ [key]: true })) : {}, types.classes, extensions);
+            }
+        };
     }
 };
 

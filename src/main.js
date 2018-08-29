@@ -6,7 +6,7 @@ Vue.use(fusion);
 
 Vue.config.productionTip = false;
 
-Vue.$load(["list", "list-row"])
+Vue.$load(["list", "list-row", "checkbox"])
     .then(() => {
         new Vue({
             render: h => h(App)
