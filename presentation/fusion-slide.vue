@@ -130,9 +130,10 @@
     .slide__image {
         text-align: center;
         height: 100%;
-        display: inline-flex;
+        display: flex;
         flex-direction: column;
         justify-content: center;
+        align-items: center;
     }
 
     .slide__header ~ .slide__image {
