@@ -11,7 +11,7 @@
                 <component :is="rowComponent" v-for="(row, key) in view" :key="key + index" :row="row" class="fs-list-row"
                            :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }" v-bind="$attrs"
                            :columns="parsedColumns" @mousedown.native.stop @select="onSelectRow" :disabled-field="disabledField"
-                           v-notify-mount @mounted="$nextTick(() => observer.observe($event))" :multiple="multiple">
+                           v-fusion-mount @mounted="$nextTick(() => observer.observe($event))">
                     <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ row, field, index }">
                         <slot :name="idx+1" :row="row" :field="field" :index="index"></slot>
                     </template>
@@ -345,7 +345,7 @@
 
             this.$emit("mounted");
         }
-    }
+    };
 </script>
 
 <style scoped>

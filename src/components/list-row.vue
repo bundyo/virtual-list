@@ -126,13 +126,16 @@
                     this.emitSelect();
                 }
             }
-        },
-    }
+        }
+    };
 </script>
 
 <style scoped>
     .fs-list-header {
         width: 100%;
+        user-select: none;
+        -moz-user-select: none;
+        -webkit-user-select: none;
         font-size: 10px;
         background: transparent;
         text-transform: uppercase;
