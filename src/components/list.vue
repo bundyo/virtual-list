@@ -106,6 +106,7 @@
                 content: null,
                 scroller: null,
                 observer: null,
+                remnant: 0,
                 firstMargin: "1px",
                 sizerHeight: "1px",
                 selectedRows: [],
@@ -123,6 +124,10 @@
                 return Array.from(this.content.querySelectorAll(".fs-list-row"));
             },
 
+            _setView() {
+                this.view = this.virtual ? this.source.slice(this.index, this.index + +this.pageSize) : this.source;
+            },
+
             intersectionCallback(entries) {
                 entries.forEach((entry) => {
                     const component = entry.target.__vue__;
@@ -132,18 +137,22 @@
                 });
             },
 
-            scrollCallback() {
-                if (!this.virtual) {
-                    return;
+            adjustIndex(index) {
+                const endOffset = this.source.length - this.view.length;
+
+                if (!index) {
+                    index = Math.round(this.scroller.scrollTop / this.rowHeight * this.scale) - this.indexOffset;
                 }
-
-                const endOffset = this.source.length - this._getRows().length;
-
-                let index = Math.round(this.scroller.scrollTop / this.rowHeight * this.scale) - this.indexOffset;
 
                 index += index % this.step;
 
-                index < 0 && (index = 0);
+                if (index < 0) {
+                    this.remnant = index - index * 2;
+                    index = 0;
+                } else {
+                    this.remnant = 0;
+                }
+
                 index > endOffset && (index = endOffset);
 
                 this.index = index;
@@ -151,6 +160,14 @@
                 if (!this.suspended) {
                     this.content.scrollTop = this.scroller.scrollTop;
                 }
+            },
+
+            scrollCallback() {
+                if (!this.virtual) {
+                    return;
+                }
+
+                this.adjustIndex();
             },
 
             passWheel(e) {
@@ -194,8 +211,38 @@
                     });
                 }
 
-                this.view = this.virtual ? this.source.slice(this.index, this.index + +this.pageSize) : this.source;
+                if (!this.virtual) {
+                    this._setView();
+                }
+
                 this.$emit("select", this.multiple === false ? this.selectedRows[index] : Object.values(this.selectedRows));
+
+                this.scrollSelectionIntoView(index);
+            },
+
+            scrollSelectionIntoView(index) {
+                this.itemList = this._getRows();
+
+                const element = this.itemList[index - this.index];
+                const offset = this.indexOffset - this.remnant;
+
+                if (!element) {
+                    return;
+                }
+
+                this.suspendUpdates();
+                if (index <= this.index + offset) {
+                    element.scrollIntoView(true);
+                    this.adjustIndex(index - offset);
+                }
+
+                if (index >= this.index + offset + this.visibleCount - this.step) {
+                    element.scrollIntoView(false);
+                    this.adjustIndex(index - this.visibleCount - offset);
+                }
+
+                this.updateScroller();
+                this.resumeUpdates();
             },
 
             onKeyDown(e) {
@@ -204,15 +251,20 @@
 
                     let selectedIndex;
 
-                    if (e.key === "ArrowUp") {
-                        selectedIndex = index - 1 >= 0 ? index - 1 : 0;
-                    } else if (e.key === "ArrowDown") {
-                        selectedIndex = index + 1 > this.source.length ? this.source.length : index + 1;
-                    } else {
-                        return;
+                    switch (e.key) {
+                        case "ArrowUp": selectedIndex = index - 1;
+                            break;
+                        case "ArrowDown": selectedIndex = index + 1;
+                            break;
+                        case "PageUp": selectedIndex = index - Math.round(this.visibleCount - 1);
+                            break;
+                        case "PageDown": selectedIndex = index + Math.round(this.visibleCount - 1);
                     }
 
-                    if (index !== selectedIndex) {
+                    selectedIndex <= 0 && (selectedIndex = 0);
+                    selectedIndex >= this.source.length && (selectedIndex = this.source.length - 1);
+
+                    if (selectedIndex !== index) {
                         this.onSelectRow(selectedIndex, !this.source[selectedIndex][this.selectedField]);
                     }
 
@@ -255,12 +307,8 @@
         },
 
         computed: {
-            types() {
-                return this.$fusion.convertToObject(this.look);
-            },
-
             typeClasses() {
-                return this.$fusion.getTypeClasses(this.types, {
+                return this.$fusion.getTypeClasses(this.$fusion.convertToObject(this.look), {
                     "-disabled": this.disabled,
                     "-selectable": this.hasSelection,
                     "-scrollable": this.pageSize > 0,
@@ -294,7 +342,7 @@
 
         watch: {
             index() {
-                this.view = this.virtual ? this.source.slice(this.index, this.index + +this.pageSize) : this.source;
+                this._setView();
             },
 
             view() {
@@ -334,9 +382,10 @@
 
             if (this.virtual) {
                 this.scroller.addEventListener("scroll", this.scrollCallback.bind(this));
-            }
 
-            this.index = 0;
+                this.index = 0;
+                setTimeout(this.adjustIndex.bind(this));
+            }
 
             this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
                 root: this.content,
