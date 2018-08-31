@@ -221,7 +221,9 @@
             },
 
             scrollSelectionIntoView(index) {
-                this.itemList = this._getRows();
+                if (this.virtual) {
+                    this.itemList = this._getRows();
+                }
 
                 const element = this.itemList[index - this.index];
                 const offset = this.indexOffset - this.remnant;
@@ -231,14 +233,14 @@
                 }
 
                 this.suspendUpdates();
-                if (index <= this.index + offset) {
+                if (element.offsetTop <= this.content.scrollTop) {
                     element.scrollIntoView(true);
-                    this.adjustIndex(index - offset);
+                    this.virtual && this.adjustIndex(index - offset);
                 }
 
-                if (index >= this.index + offset + this.visibleCount - this.step) {
+                if (element.offsetTop + element.clientHeight >= this.content.scrollTop + this.content.clientHeight) {
                     element.scrollIntoView(false);
-                    this.adjustIndex(index - this.visibleCount - offset);
+                    this.virtual && this.adjustIndex(index - this.visibleCount - offset);
                 }
 
                 this.updateScroller();
@@ -282,7 +284,9 @@
             },
 
             updateScroller() {
-                this.scroller.scrollTop = this.content.scrollTop;
+                if (this.virtual) {
+                    this.scroller.scrollTop = this.content.scrollTop;
+                }
             },
 
             suspendUpdates() {
@@ -345,6 +349,10 @@
                 this._setView();
             },
 
+            source() {
+                this._setView();
+            },
+
             view() {
                 this.$nextTick(() => {
                     this.itemList = this._getRows();
@@ -383,9 +391,10 @@
             if (this.virtual) {
                 this.scroller.addEventListener("scroll", this.scrollCallback.bind(this));
 
-                this.index = 0;
                 setTimeout(this.adjustIndex.bind(this));
             }
+
+            this.index = 0;
 
             this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
                 root: this.content,
