@@ -15,7 +15,9 @@
     <div id="app"></div>
 
     <script type="module">
+        import fusion from "../src/fusion.js";
 
+        Vue.use(fusion);
         Vue.use(httpVueLoader);
 
         Vue.directive("notify-mount", {
