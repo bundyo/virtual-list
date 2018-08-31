@@ -112,7 +112,7 @@
                 selectedRows: [],
                 hasFocus: false,
                 suspended: false,
-                tabbingIndex: this.selectable ? this.tabindex || 0 : undefined,
+                tabbingIndex: this.selectable ? this.tabindex || 0 : -1,
                 hasSelection: this.selectable,
 
                 updateProxy: this.updateScroller.bind(this)
