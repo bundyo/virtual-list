@@ -1,19 +1,19 @@
 <template>
-    <div class="fs-list" tabindex="-1" :class="typeClasses" @mousedown="onClick" @keydown="onKeyDown" @focus="onFocus" @blur="onBlur">
+    <div class="fs-list" :tabindex="tabbingIndex" :class="typeClasses" @keydown="onKeyDown" @focus="onFocus" @blur="onBlur">
         <component :is="rowComponent" v-if="header" :columns="parsedColumns" class="fs-list-header">
             <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ field }">
                 <slot :name="`header-${idx+1}`" :field="field"></slot>
             </template>
         </component>
         <div class="fs-list-body">
-            <div ref="content" class="fs-list-content" :class="{ '-focused': hasFocus }" @wheel.capture="passWheel"
+            <div ref="content" class="fs-list-content" @wheel.capture="passWheel"
                  @mousedown.capture="suspendUpdates" @mouseup.capture="resumeUpdates">
                 <component :is="rowComponent" v-for="(row, key) in view" :key="key + index" :row="row" class="fs-list-row"
                            :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }" v-bind="$attrs"
                            :columns="parsedColumns" @mousedown.native.stop @select="onSelectRow" :disabled-field="disabledField"
-                           v-notify-mount @mounted="$nextTick(() => observer.observe($event))">
-                    <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ row, field, index }">
-                        <slot :name="idx+1" :row="row" :field="field" :index="index"></slot>
+                           v-fusion-mount @mounted="$nextTick(() => observer.observe($event))">
+                    <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ row, field, index, selectedField }">
+                        <slot :name="idx+1" :row="row" :field="field" :index="index" :selectedField="selectedField"></slot>
                     </template>
                 </component>
                 <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
@@ -27,23 +27,6 @@
 </template>
 
 <script>
-    function cssId() {
-        return Math.random().toString(36).substr(2, 10);
-    }
-
-    function convertToObject(str) {
-        const splitStr = str ? str.split(" ") : [];
-        const map = str ? Object.assign(...splitStr.map(key => ({ [key]: true }))) : {};
-
-        map.classes = str ? Object.assign(...splitStr.map(key => ({ [`-${key}`]: true }))) : {};
-
-        return map;
-    }
-
-    function getTypeClasses(types, extensions, defaultTypes) {
-        return Object.assign(defaultTypes ? defaultTypes.map(key => ({ [key]: true })) : {}, types.classes, extensions);
-    }
-
     const maxHeight = 10000000;
     const keys = {
         "ArrowDown": .05,
@@ -65,7 +48,7 @@
                 type: Array,
                 default: () => []
             },
-            "row-component": {
+            rowComponent: {
                 default: "fusion-list-row"
             },
             columns: {
@@ -89,11 +72,14 @@
             pageSize: {
                 default: 40
             },
+            virtual: {
+                type: Boolean
+            },
             selectable: {
                 type: Boolean
             },
-            virtual: {
-                type: Boolean
+            multiple: {
+                default: false
             },
             autoscroll: {
                 type: Boolean
@@ -113,15 +99,17 @@
 
         data() {
             return {
-                guidClass: `-${cssId()}`,
+                view: [],
+                guidClass: `-${this.$fusion.uniqId()}`,
                 index: null,
                 scale: 1,
                 content: null,
                 scroller: null,
                 observer: null,
+                remnant: 0,
                 firstMargin: "1px",
                 sizerHeight: "1px",
-                selectedRow: -1,
+                selectedRows: [],
                 hasFocus: false,
                 suspended: false,
                 tabbingIndex: this.selectable ? this.tabindex || 0 : undefined,
@@ -133,7 +121,11 @@
 
         methods: {
             _getRows() {
-                return Array.from(this.content.querySelectorAll(".fs-list-row:not(.fs-sizer)"));
+                return Array.from(this.content.querySelectorAll(".fs-list-row"));
+            },
+
+            _setView() {
+                this.view = this.virtual ? this.source.slice(this.index, this.index + +this.pageSize) : this.source;
             },
 
             intersectionCallback(entries) {
@@ -145,18 +137,22 @@
                 });
             },
 
-            scrollCallback() {
-                if (!this.virtual) {
-                    return;
+            adjustIndex(index) {
+                const endOffset = this.source.length - this.view.length;
+
+                if (!index) {
+                    index = Math.round(this.scroller.scrollTop / this.rowHeight * this.scale) - this.indexOffset;
                 }
-
-                const endOffset = this.source.length - this._getRows().length;
-
-                let index = Math.round(this.scroller.scrollTop / this.rowHeight * this.scale) - this.indexOffset;
 
                 index += index % this.step;
 
-                index < 0 && (index = 0);
+                if (index < 0) {
+                    this.remnant = index - index * 2;
+                    index = 0;
+                } else {
+                    this.remnant = 0;
+                }
+
                 index > endOffset && (index = endOffset);
 
                 this.index = index;
@@ -164,6 +160,14 @@
                 if (!this.suspended) {
                     this.content.scrollTop = this.scroller.scrollTop;
                 }
+            },
+
+            scrollCallback() {
+                if (!this.virtual) {
+                    return;
+                }
+
+                this.adjustIndex();
             },
 
             passWheel(e) {
@@ -190,13 +194,85 @@
                 this.hasFocus = false;
             },
 
-            onClick() {
+            onSelectRow(index, newValue) {
+                const selected = this.source[index];
+
+                this.$set(this.source[index], this.selectedField, newValue);
+
+                this.selectedRows[index] = selected;
+
+                if (this.multiple === false) {
+                    this.selectedRows.forEach((value, key) => {
+                        if (value[this.selectedField] && key !== index) {
+                            this.source[key][this.selectedField] = false;
+
+                            delete this.selectedRows[key];
+                        }
+                    });
+                }
+
+                if (!this.virtual) {
+                    this._setView();
+                }
+
+                this.$emit("select", this.multiple === false ? this.selectedRows[index] : Object.values(this.selectedRows));
+
+                this.scrollSelectionIntoView(index);
             },
 
-            onSelectRow() {
+            scrollSelectionIntoView(index) {
+                if (this.virtual) {
+                    this.itemList = this._getRows();
+                }
+
+                const element = this.itemList[index - this.index];
+                const offset = this.indexOffset - this.remnant;
+
+                if (!element) {
+                    return;
+                }
+
+                this.suspendUpdates();
+                if (element.offsetTop <= this.content.scrollTop) {
+                    element.scrollIntoView(true);
+                    this.virtual && this.adjustIndex(index - offset);
+                }
+
+                if (element.offsetTop + element.clientHeight >= this.content.scrollTop + this.content.clientHeight) {
+                    element.scrollIntoView(false);
+                    this.virtual && this.adjustIndex(index - this.visibleCount - offset);
+                }
+
+                this.updateScroller();
+                this.resumeUpdates();
             },
 
             onKeyDown(e) {
+                if (this.hasSelection && this.multiple === false && this.selectedRows.length) {
+                    const index = +Object.keys(this.selectedRows)[0];
+
+                    let selectedIndex;
+
+                    switch (e.key) {
+                        case "ArrowUp": selectedIndex = index - 1;
+                            break;
+                        case "ArrowDown": selectedIndex = index + 1;
+                            break;
+                        case "PageUp": selectedIndex = index - Math.round(this.visibleCount - 1);
+                            break;
+                        case "PageDown": selectedIndex = index + Math.round(this.visibleCount - 1);
+                    }
+
+                    selectedIndex <= 0 && (selectedIndex = 0);
+                    selectedIndex >= this.source.length && (selectedIndex = this.source.length - 1);
+
+                    if (selectedIndex !== index) {
+                        this.onSelectRow(selectedIndex, !this.source[selectedIndex][this.selectedField]);
+                    }
+
+                    return;
+                }
+
                 if (!this.virtual) {
                     return;
                 }
@@ -208,7 +284,9 @@
             },
 
             updateScroller() {
-                this.scroller.scrollTop = this.content.scrollTop;
+                if (this.virtual) {
+                    this.scroller.scrollTop = this.content.scrollTop;
+                }
             },
 
             suspendUpdates() {
@@ -233,16 +311,8 @@
         },
 
         computed: {
-            view() {
-                return this.virtual ? this.source.slice(this.index, this.index + +this.pageSize) : this.source;
-            },
-
-            types() {
-                return convertToObject(this.look);
-            },
-
             typeClasses() {
-                return getTypeClasses(this.types, {
+                return this.$fusion.getTypeClasses(this.$fusion.convertToObject(this.look), {
                     "-disabled": this.disabled,
                     "-selectable": this.hasSelection,
                     "-scrollable": this.pageSize > 0,
@@ -276,30 +346,41 @@
 
         watch: {
             index() {
-                if (!this.virtual) {
-                    return;
-                }
+                this._setView();
+            },
 
-                const rows = this._getRows();
-                const len = rows.length;
+            source() {
+                this._setView();
+            },
 
-                if (len) {
-                    const firstRowRect = rows.shift().getBoundingClientRect();
-                    const lastRowRect = len > 1 && rows.pop().getBoundingClientRect();
+            view() {
+                this.$nextTick(() => {
+                    this.itemList = this._getRows();
 
-                    this.rowHeight = Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / len);
+                    if (!this.virtual) {
+                        return;
+                    }
 
-                    const sizerHeight = this.source.length * this.rowHeight;
+                    const len = this.itemList.length;
 
-                    this.scale = sizerHeight / maxHeight;
-                    this.scale <= 1 && (this.scale = Math.ceil(this.scale));
+                    if (len) {
+                        const firstRowRect = this.itemList.shift().getBoundingClientRect();
+                        const lastRowRect = len > 1 && this.itemList.pop().getBoundingClientRect();
 
-                    this.firstMargin = this.index * this.rowHeight / this.scale;
-                    this.visibleCount = Math.ceil(this.content.clientHeight / this.rowHeight);
-                    this.indexOffset = Math.floor((this.pageSize - this.visibleCount) / 2);
-                    this.sizerHeight = `${this.scale <= 1 ? sizerHeight :
-                        Math.max(this.pageSize * this.rowHeight + this.firstMargin, sizerHeight / this.scale)}px`;
-                }
+                        this.rowHeight = Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / len);
+
+                        const sizerHeight = this.source.length * this.rowHeight;
+
+                        this.scale = sizerHeight / maxHeight;
+                        this.scale <= 1 && (this.scale = Math.ceil(this.scale));
+
+                        this.firstMargin = this.index * this.rowHeight / this.scale;
+                        this.visibleCount = Math.ceil(this.content.clientHeight / this.rowHeight);
+                        this.indexOffset = Math.floor((this.pageSize - this.visibleCount) / 2);
+                        this.sizerHeight = `${this.scale <= 1 ? sizerHeight :
+                            Math.max(this.pageSize * this.rowHeight + this.firstMargin, sizerHeight / this.scale)}px`;
+                    }
+                });
             }
         },
 
@@ -310,8 +391,10 @@
             if (this.virtual) {
                 this.scroller.addEventListener("scroll", this.scrollCallback.bind(this));
 
-                this.index = 0;
+                setTimeout(this.adjustIndex.bind(this));
             }
+
+            this.index = 0;
 
             this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
                 root: this.content,
@@ -321,7 +404,7 @@
 
             this.$emit("mounted");
         }
-    }
+    };
 </script>
 
 <style scoped>

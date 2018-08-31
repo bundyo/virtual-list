@@ -1,8 +1,14 @@
 import Vue from 'vue';
 import App from './App.vue';
+import fusion from  "./fusion.js";
+
+Vue.use(fusion);
 
 Vue.config.productionTip = false;
 
-new Vue({
-  render: h => h(App)
-}).$mount('#app');
+Vue.$load(["list", "list-row", "checkbox"])
+    .then(() => {
+        new Vue({
+            render: h => h(App)
+        }).$mount('#app');
+    });
