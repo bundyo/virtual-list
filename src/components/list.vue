@@ -8,7 +8,7 @@
         <div class="fs-list-body">
             <div ref="content" class="fs-list-content" @wheel.capture="passWheel"
                  @mousedown.capture="suspendUpdates" @mouseup.capture="resumeUpdates">
-                <component :is="rowComponent" v-for="(row, key) in view" :key="key + index" :row="row" class="fs-list-row"
+                <component :is="rowComponent" v-for="(row, key) in view" :key="key + index" :row="row" :selectable="hasSelection"
                            :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }" v-bind="$attrs"
                            :columns="parsedColumns" @mousedown.native.stop @select="onSelectRow" :disabled-field="disabledField"
                            v-fusion-mount @mounted="$nextTick(() => observer.observe($event))">
@@ -76,7 +76,8 @@
                 type: Boolean
             },
             selectable: {
-                type: Boolean
+                type: Boolean,
+                default: false
             },
             multiple: {
                 default: false
@@ -113,7 +114,7 @@
                 hasFocus: false,
                 suspended: false,
                 tabbingIndex: this.selectable ? this.tabindex || 0 : -1,
-                hasSelection: this.selectable,
+                hasSelection: this.selectable !== false,
 
                 updateProxy: this.updateScroller.bind(this)
             };
@@ -195,6 +196,10 @@
             },
 
             onSelectRow(index, newValue) {
+                if (!this.hasSelection) {
+                    return;
+                }
+
                 const selected = this.source[index];
 
                 this.$set(this.source[index], this.selectedField, newValue);
@@ -418,6 +423,8 @@
         flex: 1;
         min-height: 100px;
         position: relative;
+        display: flex;
+        flex-direction: column;
     }
 
     .fs-list-content,
@@ -432,6 +439,7 @@
     .fs-list-content {
         width: 100%;
         top: 0;
+        flex: 1;
     }
 
     .fs-scroller {

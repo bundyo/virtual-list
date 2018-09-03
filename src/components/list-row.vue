@@ -23,6 +23,10 @@
                 default: () => []
             },
 
+            selectable: {
+                default: false
+            },
+
             index: {
                 default: -1
             },
@@ -60,11 +64,7 @@
 
         methods: {
             onClick() {
-                if (!this.row) {
-                    return;
-                }
-
-                if (this.multiple === false && this.row[this.selectedField]) {
+                if (!this.row || !this.selectable || (this.multiple === false && this.row[this.selectedField])) {
                     return;
                 }
 

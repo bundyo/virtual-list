@@ -13,7 +13,7 @@ function createImportPromise(name, Vue) {
 const fusion = {
     install: function (Vue) {
         Vue.directive("fusion-mount", {
-            inserted: function (el, binding, vnode) {
+            inserted(el, binding, vnode) {
                 vnode.componentInstance.$emit("mounted", el);
             }
         });
@@ -24,7 +24,7 @@ const fusion = {
         //});
 
         // 4. add an instance method
-        Vue.$load = function (module) {
+        Vue.$load = (module) => {
             if (Array.isArray(module)) {
                 return Promise.all(module.map((name) => createImportPromise(name, Vue)));
             }
