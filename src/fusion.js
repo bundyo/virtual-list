@@ -34,7 +34,7 @@ const fusion = {
 
         Vue.prototype.$fusion = {
             uniqId() {
-                return Math.random().toString(36).substr(2, 10);
+                return `a${Math.random().toString(36).substr(2, 10)}`;
             },
 
             convertToObject(str) {

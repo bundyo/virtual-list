@@ -11,7 +11,7 @@
                 <component :is="rowComponent" v-for="(row, key) in view" :key="key + index" :row="row" :selectable="hasSelection"
                            :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }" v-bind="$attrs"
                            :columns="parsedColumns" @mousedown.native.stop @select="onSelectRow" :disabled-field="disabledField"
-                           v-fusion-mount @mounted="$nextTick(() => observer.observe($event))">
+                           v-fusion-mount @mounted="$nextTick(() => observed && observer.observe($event))">
                     <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ row, field, index, selectedField }">
                         <slot :name="idx+1" :row="row" :field="field" :index="index" :selectedField="selectedField"></slot>
                     </template>
@@ -22,18 +22,18 @@
                 <div class="fs-sizer" :style="{ height: sizerHeight }"></div>
             </div>
         </div>
-        <div v-show="false" v-if="columns" v-html="style"></div>
+        <div v-show="false" v-html="style"></div>
     </div>
 </template>
 
 <script>
     const maxHeight = 10000000;
     const keys = {
-        "ArrowDown": .05,
-        "ArrowUp": -.05,
-        "PageDown": 1,
-        "PageUp": -1,
-        "Space": 1
+        ArrowDown: 0.05,
+        ArrowUp: -0.05,
+        PageDown: 1,
+        PageUp: -1,
+        Space: 1
     };
 
     const columnRegExp = /\s*,\s*/;
@@ -75,6 +75,10 @@
             virtual: {
                 type: Boolean
             },
+            observed: {
+                type: Boolean,
+                default: false
+            },
             selectable: {
                 type: Boolean,
                 default: false
@@ -101,7 +105,7 @@
         data() {
             return {
                 view: [],
-                guidClass: `-${this.$fusion.uniqId()}`,
+                uniqClass: `-${this.$fusion.uniqId()}`,
                 index: null,
                 scale: 1,
                 content: null,
@@ -177,7 +181,7 @@
                 }
 
                 if (e.deltaMode) {
-                    const lineHeight = keys["ArrowDown"] * this.content.clientHeight;
+                    const lineHeight = keys.ArrowDown * this.content.clientHeight;
 
                     this.scroller.scrollTop += e.deltaY * lineHeight;
                     this.scroller.scrollLeft += e.deltaX * lineHeight;
@@ -323,7 +327,7 @@
                     "-scrollable": this.pageSize > 0,
                     "-virtual": this.virtual,
                     "-focused": this.hasFocus,
-                    [this.guidClass]: true
+                        [this.uniqClass]: true
                 });
             },
 
@@ -341,7 +345,7 @@
                 let output = "<style>";
 
                 this.parsedColumns.forEach((value, key) => {
-                    output += `.${this.guidClass} .fs-list-row>*:nth-child(${key + 1}){width: ${value.width};${value.width === "auto" ?
+                        output += `.${this.uniqClass} .fs-list-row>*:nth-child(${key + 1}){width: ${value.width};${value.width === "auto" ?
                         "flex: 1;" : ""}}\n`;
                 });
 
@@ -369,8 +373,8 @@
                     const len = this.itemList.length;
 
                     if (len) {
-                        const firstRowRect = this.itemList.shift().getBoundingClientRect();
-                        const lastRowRect = len > 1 && this.itemList.pop().getBoundingClientRect();
+                        const firstRowRect = this.itemList[0].getBoundingClientRect();
+                        const lastRowRect = len > 1 && this.itemList[this.itemList.length - 1].getBoundingClientRect();
 
                         this.rowHeight = Math.round((lastRowRect.top - firstRowRect.top + lastRowRect.height) / len);
 
@@ -401,13 +405,21 @@
 
             this.index = 0;
 
-            this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
-                root: this.content,
-                rootMargin: "0px",
-                threshold: 0
-            });
+            if (this.observed) {
+                this.observer = new IntersectionObserver(this.intersectionCallback.bind(this), {
+                    root: this.content,
+                    rootMargin: "0px",
+                    threshold: 0
+                });
+            }
 
             this.$emit("mounted");
+        },
+
+        beforeDestroy() {
+            if (this.hasSelection && this.selectedRows.length === 0) {
+                this.$emit("select", { value: undefined }, -1);
+            }
         }
     };
 </script>
