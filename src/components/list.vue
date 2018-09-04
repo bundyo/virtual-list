@@ -11,7 +11,7 @@
                 <component :is="rowComponent" v-for="(row, key) in view" :key="key + index" :row="row" :selectable="hasSelection"
                            :index="key + index" :style="{ marginTop: key === 0 ? `${firstMargin}px` : 0 }" v-bind="$attrs"
                            :columns="parsedColumns" @mousedown.native.stop @select="onSelectRow" :disabled-field="disabledField"
-                           v-fusion-mount @mounted="$nextTick(() => observed && observer.observe($event))">
+                           v-fusion-mount @mounted="$nextTick(() => observed && observer.observe($event))" :multiple="multiple">
                     <template v-for="(column, idx) in parsedColumns" :slot="idx+1" slot-scope="{ row, field, index, selectedField }">
                         <slot :name="idx+1" :row="row" :field="field" :index="index" :selectedField="selectedField"></slot>
                     </template>
@@ -67,7 +67,7 @@
                 default: "disabled"
             },
             step: {
-                default: 2
+                default: 1
             },
             pageSize: {
                 default: 40
@@ -98,7 +98,7 @@
         },
 
         model: {
-            prop: "value",
+            prop: "selection",
             event: "select"
         },
 
@@ -199,32 +199,30 @@
                 this.hasFocus = false;
             },
 
+            toggleRow(index, newValue) {
+                if (newValue) {
+                    this.selectedRows[index] = this.source[index];
+                } else {
+                    delete this.selectedRows[index];
+                }
+            },
+
             onSelectRow(index, newValue) {
                 if (!this.hasSelection) {
                     return;
                 }
 
-                const selected = this.source[index];
-
-                this.$set(this.source[index], this.selectedField, newValue);
-
-                this.selectedRows[index] = selected;
-
                 if (this.multiple === false) {
-                    this.selectedRows.forEach((value, key) => {
-                        if (value[this.selectedField] && key !== index) {
-                            this.source[key][this.selectedField] = false;
-
-                            delete this.selectedRows[key];
-                        }
-                    });
+                    this.selectedRows.forEach((value, key) => this.toggleRow(key, false));
                 }
+
+                this.toggleRow(index, newValue);
 
                 if (!this.virtual) {
                     this._setView();
                 }
 
-                this.$emit("select", this.multiple === false ? this.selectedRows[index] : Object.values(this.selectedRows));
+                this.$emit("select", this.multiple === false ? this.selectedRows[index] : Object.values(this.selectedRows), index);
 
                 this.scrollSelectionIntoView(index);
             },
